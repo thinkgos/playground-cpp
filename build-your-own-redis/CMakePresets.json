@@ -1,0 +1,22 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "redis",
+      "displayName": "BuildYourOwnRedis Configure Preset",
+      "description": "Configure Preset to use with the redis",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "redis",
+      "displayName": "BuildYourOwnRedis Build Preset",
+      "description": "Build Preset to use with the redis",
+      "configurePreset": "redis"
+    }
+  ]
+}

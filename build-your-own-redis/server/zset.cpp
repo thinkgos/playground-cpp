@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <algorithm>
 // proj
 #include "zset.h"
 #include "common.h"
@@ -23,11 +24,6 @@ static void znode_del(ZNode *node)
     free(node);
 }
 
-static size_t min(size_t lhs, size_t rhs)
-{
-    return lhs < rhs ? lhs : rhs;
-}
-
 // compare by the (score, name) tuple
 static bool zless(
     AVLNode *lhs, double score, const char *name, size_t len)
@@ -37,7 +33,8 @@ static bool zless(
     {
         return zl->score < score;
     }
-    int rv = memcmp(zl->name, name, min(zl->len, len));
+
+    int rv = memcmp(zl->name, name, std::min(zl->len, len));
     if (rv != 0)
     {
         return rv < 0;

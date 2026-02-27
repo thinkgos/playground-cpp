@@ -24,6 +24,7 @@
 #include "list.h"
 #include "heap.h"
 #include "thread_pool.h"
+#include "buffer.h"
 
 static void msg(const char *msg)
 {
@@ -69,19 +70,6 @@ static void fd_set_nb(int fd)
 }
 
 const size_t k_max_msg = 32 << 20; // likely larger than the kernel buffer
-
-typedef std::vector<uint8_t> Buffer;
-
-// append to the back
-static void buf_append(Buffer &buf, const uint8_t *data, size_t len)
-{
-    buf.insert(buf.end(), data, data + len);
-}
-// remove from the front
-static void buf_consume(Buffer &buf, size_t n)
-{
-    buf.erase(buf.begin(), buf.begin() + n);
-}
 
 struct Conn
 {
@@ -229,80 +217,6 @@ enum
     ERR_BAD_ARG = 4, // bad arguments
 };
 
-// data types of serialized data
-enum
-{
-    TAG_NIL = 0, // nil
-    TAG_ERR = 1, // error code + msg
-    TAG_STR = 2, // string
-    TAG_INT = 3, // int64
-    TAG_DBL = 4, // double
-    TAG_ARR = 5, // array
-};
-
-// help functions for the serialization
-static void buf_append_u8(Buffer &buf, uint8_t data)
-{
-    buf.push_back(data);
-}
-static void buf_append_u32(Buffer &buf, uint32_t data)
-{
-    buf_append(buf, (const uint8_t *)&data, 4);
-}
-static void buf_append_i64(Buffer &buf, int64_t data)
-{
-    buf_append(buf, (const uint8_t *)&data, 8);
-}
-static void buf_append_dbl(Buffer &buf, double data)
-{
-    buf_append(buf, (const uint8_t *)&data, 8);
-}
-
-// append serialized data types to the back
-static void out_nil(Buffer &out)
-{
-    buf_append_u8(out, TAG_NIL);
-}
-static void out_str(Buffer &out, const char *s, size_t size)
-{
-    buf_append_u8(out, TAG_STR);
-    buf_append_u32(out, (uint32_t)size);
-    buf_append(out, (const uint8_t *)s, size);
-}
-static void out_int(Buffer &out, int64_t val)
-{
-    buf_append_u8(out, TAG_INT);
-    buf_append_i64(out, val);
-}
-static void out_dbl(Buffer &out, double val)
-{
-    buf_append_u8(out, TAG_DBL);
-    buf_append_dbl(out, val);
-}
-static void out_err(Buffer &out, uint32_t code, const std::string &msg)
-{
-    buf_append_u8(out, TAG_ERR);
-    buf_append_u32(out, code);
-    buf_append_u32(out, (uint32_t)msg.size());
-    buf_append(out, (const uint8_t *)msg.data(), msg.size());
-}
-static void out_arr(Buffer &out, uint32_t n)
-{
-    buf_append_u8(out, TAG_ARR);
-    buf_append_u32(out, n);
-}
-static size_t out_begin_arr(Buffer &out)
-{
-    out.push_back(TAG_ARR);
-    buf_append_u32(out, 0); // filled by out_end_arr()
-    return out.size() - 4;  // the `ctx` arg
-}
-static void out_end_arr(Buffer &out, size_t ctx, uint32_t n)
-{
-    assert(out[ctx - 1] == TAG_ARR);
-    memcpy(&out[ctx], &n, 4);
-}
-
 // value types
 enum
 {
@@ -389,15 +303,15 @@ static void do_get(std::vector<std::string> &cmd, Buffer &out)
     HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
     if (!node)
     {
-        return out_nil(out);
+        return out.out_nil();
     }
     // copy the value
     Entry *ent = container_of(node, Entry, node);
     if (ent->type != T_STR)
     {
-        return out_err(out, ERR_BAD_TYP, "not a string value");
+        return out.out_err(ERR_BAD_TYP, "not a string value");
     }
-    return out_str(out, ent->str.data(), ent->str.size());
+    return out.out_str(ent->str.data(), ent->str.size());
 }
 
 static void do_set(std::vector<std::string> &cmd, Buffer &out)
@@ -414,7 +328,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out)
         Entry *ent = container_of(node, Entry, node);
         if (ent->type != T_STR)
         {
-            return out_err(out, ERR_BAD_TYP, "a non-string value exists");
+            return out.out_err(ERR_BAD_TYP, "a non-string value exists");
         }
         ent->str.swap(cmd[2]);
     }
@@ -427,7 +341,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out)
         ent->str.swap(cmd[2]);
         hm_insert(&g_data.db, &ent->node);
     }
-    return out_nil(out);
+    return out.out_nil();
 }
 
 static void do_del(std::vector<std::string> &cmd, Buffer &out)
@@ -442,7 +356,7 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out)
     { // deallocate the pair
         entry_del(container_of(node, Entry, node));
     }
-    return out_int(out, node ? 1 : 0);
+    return out.out_int(node ? 1 : 0);
 }
 
 static void heap_delete(std::vector<HeapItem> &a, size_t pos)
@@ -502,7 +416,7 @@ static void do_expire(std::vector<std::string> &cmd, Buffer &out)
     int64_t ttl_ms = 0;
     if (!str2int(cmd[2], ttl_ms))
     {
-        return out_err(out, ERR_BAD_ARG, "expect int64");
+        return out.out_err(ERR_BAD_ARG, "expect int64");
     }
 
     LookupKey key;
@@ -515,7 +429,7 @@ static void do_expire(std::vector<std::string> &cmd, Buffer &out)
         Entry *ent = container_of(node, Entry, node);
         entry_set_ttl(ent, ttl_ms);
     }
-    return out_int(out, node ? 1 : 0);
+    return out.out_int(node ? 1 : 0);
 }
 
 // PTTL key
@@ -528,31 +442,31 @@ static void do_ttl(std::vector<std::string> &cmd, Buffer &out)
     HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
     if (!node)
     {
-        return out_int(out, -2); // not found
+        return out.out_int(-2); // not found
     }
 
     Entry *ent = container_of(node, Entry, node);
     if (ent->heap_idx == (size_t)-1)
     {
-        return out_int(out, -1); // no TTL
+        return out.out_int(-1); // no TTL
     }
 
     uint64_t expire_at = g_data.heap[ent->heap_idx].val;
     uint64_t now_ms = get_monotonic_msec();
-    return out_int(out, expire_at > now_ms ? (expire_at - now_ms) : 0);
+    return out.out_int(expire_at > now_ms ? (expire_at - now_ms) : 0);
 }
 
 static bool cb_keys(HNode *node, void *arg)
 {
     Buffer &out = *(Buffer *)arg;
     const std::string &key = container_of(node, Entry, node)->key;
-    out_str(out, key.data(), key.size());
+    out.out_str(key.data(), key.size());
     return true;
 }
 
 static void do_keys(std::vector<std::string> &, Buffer &out)
 {
-    out_arr(out, (uint32_t)hm_size(&g_data.db));
+    out.out_arr((uint32_t)hm_size(&g_data.db));
     hm_foreach(&g_data.db, &cb_keys, (void *)&out);
 }
 
@@ -569,7 +483,7 @@ static void do_zadd(std::vector<std::string> &cmd, Buffer &out)
     double score = 0;
     if (!str2dbl(cmd[2], score))
     {
-        return out_err(out, ERR_BAD_ARG, "expect float");
+        return out.out_err(ERR_BAD_ARG, "expect float");
     }
 
     // look up or create the zset
@@ -591,14 +505,14 @@ static void do_zadd(std::vector<std::string> &cmd, Buffer &out)
         ent = container_of(hnode, Entry, node);
         if (ent->type != T_ZSET)
         {
-            return out_err(out, ERR_BAD_TYP, "expect zset");
+            return out.out_err(ERR_BAD_TYP, "expect zset");
         }
     }
 
     // add or update the tuple
     const std::string &name = cmd[3];
     bool added = zset_insert(&ent->zset, name.data(), name.size(), score);
-    return out_int(out, (int64_t)added);
+    return out.out_int((int64_t)added);
 }
 
 static const ZSet k_empty_zset;
@@ -623,7 +537,7 @@ static void do_zrem(std::vector<std::string> &cmd, Buffer &out)
     ZSet *zset = expect_zset(cmd[1]);
     if (!zset)
     {
-        return out_err(out, ERR_BAD_TYP, "expect zset");
+        return out.out_err(ERR_BAD_TYP, "expect zset");
     }
 
     const std::string &name = cmd[2];
@@ -632,7 +546,7 @@ static void do_zrem(std::vector<std::string> &cmd, Buffer &out)
     {
         zset_delete(zset, znode);
     }
-    return out_int(out, znode ? 1 : 0);
+    return out.out_int(znode ? 1 : 0);
 }
 
 // zscore zset name
@@ -641,12 +555,12 @@ static void do_zscore(std::vector<std::string> &cmd, Buffer &out)
     ZSet *zset = expect_zset(cmd[1]);
     if (!zset)
     {
-        return out_err(out, ERR_BAD_TYP, "expect zset");
+        return out.out_err(ERR_BAD_TYP, "expect zset");
     }
 
     const std::string &name = cmd[2];
     ZNode *znode = zset_lookup(zset, name.data(), name.size());
-    return znode ? out_dbl(out, znode->score) : out_nil(out);
+    return znode ? out.out_dbl(znode->score) : out.out_nil();
 }
 
 // zquery zset score name offset limit
@@ -656,41 +570,41 @@ static void do_zquery(std::vector<std::string> &cmd, Buffer &out)
     double score = 0;
     if (!str2dbl(cmd[2], score))
     {
-        return out_err(out, ERR_BAD_ARG, "expect fp number");
+        return out.out_err(ERR_BAD_ARG, "expect fp number");
     }
     const std::string &name = cmd[3];
     int64_t offset = 0, limit = 0;
     if (!str2int(cmd[4], offset) || !str2int(cmd[5], limit))
     {
-        return out_err(out, ERR_BAD_ARG, "expect int");
+        return out.out_err(ERR_BAD_ARG, "expect int");
     }
 
     // get the zset
     ZSet *zset = expect_zset(cmd[1]);
     if (!zset)
     {
-        return out_err(out, ERR_BAD_TYP, "expect zset");
+        return out.out_err(ERR_BAD_TYP, "expect zset");
     }
 
     // seek to the key
     if (limit <= 0)
     {
-        return out_arr(out, 0);
+        return out.out_arr(0);
     }
     ZNode *znode = zset_seekge(zset, score, name.data(), name.size());
     znode = znode_offset(znode, offset);
 
     // output
-    size_t ctx = out_begin_arr(out);
+    size_t ctx = out.out_begin_arr();
     int64_t n = 0;
     while (znode && n < limit)
     {
-        out_str(out, znode->name, znode->len);
-        out_dbl(out, znode->score);
+        out.out_str(znode->name, znode->len);
+        out.out_dbl(znode->score);
         znode = znode_offset(znode, +1);
         n += 2;
     }
-    out_end_arr(out, ctx, (uint32_t)n);
+    out.out_end_arr(ctx, (uint32_t)n);
 }
 
 static void do_request(std::vector<std::string> &cmd, Buffer &out)
@@ -737,14 +651,14 @@ static void do_request(std::vector<std::string> &cmd, Buffer &out)
     }
     else
     {
-        return out_err(out, ERR_UNKNOWN, "unknown command.");
+        return out.out_err(ERR_UNKNOWN, "unknown command.");
     }
 }
 
 static void response_begin(Buffer &out, size_t *header)
 {
-    *header = out.size();   // messege header position
-    buf_append_u32(out, 0); // reserve space
+    *header = out.size();       // messege header position
+    out.push_back((uint32_t)0); // reserve space
 }
 static size_t response_size(Buffer &out, size_t header)
 {
@@ -756,12 +670,12 @@ static void response_end(Buffer &out, size_t header)
     if (msg_size > k_max_msg)
     {
         out.resize(header + 4);
-        out_err(out, ERR_TOO_BIG, "response is too big.");
+        out.out_err(ERR_TOO_BIG, "response is too big.");
         msg_size = response_size(out, header);
     }
     // message header
     uint32_t len = (uint32_t)msg_size;
-    memcpy(&out[header], &len, 4);
+    memcpy(out.data() + header, &len, 4);
 }
 
 // process 1 request if there is enough data
@@ -785,7 +699,7 @@ static bool try_one_request(Conn *conn)
     {
         return false; // want read
     }
-    const uint8_t *request = &conn->incoming[4];
+    const uint8_t *request = conn->incoming.data() + 4;
 
     // got one request, do some application logic
     std::vector<std::string> cmd;
@@ -801,7 +715,7 @@ static bool try_one_request(Conn *conn)
     response_end(conn->outgoing, header_pos);
 
     // application logic done! remove the request message.
-    buf_consume(conn->incoming, 4 + len);
+    conn->incoming.consume(4 + len);
     // Q: Why not just empty the buffer? See the explanation of "pipelining".
     return true; // success
 }
@@ -810,7 +724,7 @@ static bool try_one_request(Conn *conn)
 static void handle_write(Conn *conn)
 {
     assert(conn->outgoing.size() > 0);
-    ssize_t rv = write(conn->fd, &conn->outgoing[0], conn->outgoing.size());
+    ssize_t rv = write(conn->fd, conn->outgoing.data(), conn->outgoing.size());
     if (rv < 0 && errno == EAGAIN)
     {
         return; // actually not ready
@@ -823,7 +737,7 @@ static void handle_write(Conn *conn)
     }
 
     // remove written data from `outgoing`
-    buf_consume(conn->outgoing, (size_t)rv);
+    conn->outgoing.consume((size_t)rv);
 
     // update the readiness intention
     if (conn->outgoing.size() == 0)
@@ -865,7 +779,7 @@ static void handle_read(Conn *conn)
         return; // want close
     }
     // got some new data
-    buf_append(conn->incoming, buf, (size_t)rv);
+    conn->incoming.push_back(buf, (size_t)rv);
 
     // parse requests and generate responses
     while (try_one_request(conn))

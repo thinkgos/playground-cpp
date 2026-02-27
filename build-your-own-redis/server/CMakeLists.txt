@@ -6,9 +6,11 @@ project(server
 set(TARGET_NAME ${PROJECT_NAME})
 
 add_executable(${TARGET_NAME})
+
+file(GLOB_RECURSE SRC_FILES "*.cpp")
 target_sources(${TARGET_NAME}
     PRIVATE
-        main.cpp
+       ${SRC_FILES}
 )
 
 set(CMAKE_VERBOSE_MAKEFILE ON)

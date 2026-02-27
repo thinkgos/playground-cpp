@@ -25,18 +25,18 @@ private:
     std::vector<uint8_t> buf;
 
 public:
-    Buffer();
-    ~Buffer();
+    Buffer() = default;
+    ~Buffer() = default;
 
-    size_t size()
+    inline size_t size() const
     {
         return buf.size();
     }
-    void resize(size_t size)
+    inline void resize(size_t size)
     {
         buf.resize(size);
     }
-    uint8_t *data()
+    inline const uint8_t *data() const
     {
         return buf.data();
     }
@@ -46,83 +46,75 @@ public:
     }
 
     // remove from the front
-    void consume(size_t n)
+    inline void consume(size_t n)
     {
         buf.erase(buf.begin(), buf.begin() + n);
     }
     // append to the back
-    void push_back(const uint8_t *data, size_t len)
+    inline void push_back(const uint8_t *data, size_t len)
     {
         buf.insert(buf.end(), data, data + len);
     }
-    void push_back(uint8_t data)
+    inline void push_back(uint8_t data)
     {
         buf.push_back(data);
     }
-    void push_back(uint32_t data)
+    inline void push_back(uint32_t data)
     {
         push_back((const uint8_t *)&data, 4);
     }
-    void push_back(int64_t data)
+    inline void push_back(int64_t data)
     {
         push_back((const uint8_t *)&data, 8);
     }
-    void push_back(double data)
+    inline void push_back(double data)
     {
         push_back((const uint8_t *)&data, 8);
     }
 
     // append serialized data types to the back
-    void out_nil()
+    inline void out_nil()
     {
         push_back((uint8_t)TAG_NIL);
     }
-    void out_str(const char *s, size_t size)
+    inline void out_str(const char *s, size_t size)
     {
         push_back((uint8_t)TAG_STR);
         push_back((uint32_t)size);
         push_back((const uint8_t *)s, size);
     }
-    void out_int(int64_t val)
+    inline void out_int(int64_t val)
     {
         push_back((uint8_t)TAG_INT);
         push_back(val);
     }
-    void out_dbl(double val)
+    inline void out_dbl(double val)
     {
         push_back((uint8_t)TAG_DBL);
         push_back(val);
     }
 
-    void out_err(uint32_t code, const std::string &msg)
+    inline void out_err(uint32_t code, const std::string &msg)
     {
         push_back((uint8_t)TAG_ERR);
         push_back(code);
         push_back((uint32_t)msg.size());
         push_back((const uint8_t *)msg.data(), msg.size());
     }
-    void out_arr(uint32_t n)
+    inline void out_arr(uint32_t n)
     {
         push_back((uint8_t)TAG_ARR);
         push_back(n);
     }
-    size_t out_begin_arr()
+    inline size_t out_begin_arr()
     {
         push_back((uint8_t)TAG_ARR);
         push_back((uint32_t)0); // filled by out_end_arr()
         return buf.size() - 4;  // the `ctx` arg
     }
-    void out_end_arr(size_t ctx, uint32_t n)
+    inline void out_end_arr(size_t ctx, uint32_t n)
     {
         assert(buf[ctx - 1] == TAG_ARR);
         memcpy(&buf[ctx], &n, 4);
     }
 };
-
-Buffer::Buffer()
-{
-}
-
-Buffer::~Buffer()
-{
-}

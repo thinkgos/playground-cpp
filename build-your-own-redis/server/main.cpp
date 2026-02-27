@@ -125,7 +125,7 @@ static int32_t handle_accept(int fd)
     conn->fd = connfd;
     conn->want_read = true;
     conn->last_active_ms = get_monotonic_msec();
-    dlist_insert_before(&g_data.idle_list, &conn->idle_node);
+    g_data.idle_list.insert_back(&conn->idle_node);
 
     // put it into the map
     if (g_data.fd2conn.size() <= (size_t)conn->fd)
@@ -141,7 +141,7 @@ static void conn_destroy(Conn *conn)
 {
     (void)close(conn->fd);
     g_data.fd2conn[conn->fd] = NULL;
-    dlist_detach(&conn->idle_node);
+    conn->idle_node.detach();
     delete conn;
 }
 
@@ -174,8 +174,7 @@ read_str(const uint8_t *&cur, const uint8_t *end, size_t n, std::string &out)
 // | nstr | len | str1 | len | str2 | ... | len | strn |
 // +------+-----+------+-----+------+-----+-----+------+
 
-static int32_t
-parse_req(const uint8_t *data, size_t size, std::vector<std::string> &out)
+static int32_t parse_req(const uint8_t *data, size_t size, std::vector<std::string> &out)
 {
     const uint8_t *end = data + size;
     uint32_t nstr = 0;
@@ -675,7 +674,7 @@ static void response_end(Buffer &out, size_t header)
     }
     // message header
     uint32_t len = (uint32_t)msg_size;
-    memcpy(out.data() + header, &len, 4);
+    memcpy((void *)(out.data() + header), &len, 4);
 }
 
 // process 1 request if there is enough data
@@ -805,7 +804,7 @@ static uint32_t next_timer_ms()
     uint64_t now_ms = get_monotonic_msec();
     uint64_t next_ms = (uint64_t)-1;
     // idle timers using a linked list
-    if (!dlist_empty(&g_data.idle_list))
+    if (!g_data.idle_list.empty())
     {
         Conn *conn = container_of(g_data.idle_list.next, Conn, idle_node);
         next_ms = conn->last_active_ms + k_idle_timeout_ms;
@@ -836,7 +835,7 @@ static void process_timers()
 {
     uint64_t now_ms = get_monotonic_msec();
     // idle timers using a linked list
-    while (!dlist_empty(&g_data.idle_list))
+    while (!g_data.idle_list.empty())
     {
         Conn *conn = container_of(g_data.idle_list.next, Conn, idle_node);
         uint64_t next_ms = conn->last_active_ms + k_idle_timeout_ms;
@@ -871,7 +870,6 @@ static void process_timers()
 int main()
 {
     // initialization
-    dlist_init(&g_data.idle_list);
     thread_pool_init(&g_data.thread_pool, 4);
 
     // the listening socket
@@ -964,8 +962,9 @@ int main()
 
             // update the idle timer by moving conn to the end of the list
             conn->last_active_ms = get_monotonic_msec();
-            dlist_detach(&conn->idle_node);
-            dlist_insert_before(&g_data.idle_list, &conn->idle_node);
+            conn->idle_node.detach();
+
+            g_data.idle_list.insert_back(&conn->idle_node);
 
             // handle IO
             if (ready & POLLIN)

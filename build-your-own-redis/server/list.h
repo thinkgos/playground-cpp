@@ -6,31 +6,34 @@ struct DList
 {
     DList *prev = NULL;
     DList *next = NULL;
+    DList()
+    {
+        this->prev = this;
+        this->next = this;
+    }
+    ~DList() = default;
+
+    inline bool empty()
+    {
+        return this->next == this;
+    }
+    inline void detach()
+    {
+        DList *prev = this->prev;
+        DList *next = this->next;
+
+        this->prev->next = next;
+        this->next->prev = prev;
+        this->prev = this;
+        this->next = this;
+    }
+    inline void insert_back(DList *rookie)
+    {
+        DList *prev = this->prev;
+
+        prev->next = rookie;
+        rookie->prev = prev;
+        rookie->next = this;
+        this->prev = rookie;
+    }
 };
-
-inline void dlist_init(DList *node)
-{
-    node->prev = node->next = node;
-}
-
-inline bool dlist_empty(DList *node)
-{
-    return node->next == node;
-}
-
-inline void dlist_detach(DList *node)
-{
-    DList *prev = node->prev;
-    DList *next = node->next;
-    prev->next = next;
-    next->prev = prev;
-}
-
-inline void dlist_insert_before(DList *target, DList *rookie)
-{
-    DList *prev = target->prev;
-    prev->next = rookie;
-    rookie->prev = prev;
-    rookie->next = target;
-    target->prev = rookie;
-}

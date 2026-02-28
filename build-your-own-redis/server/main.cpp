@@ -96,7 +96,7 @@ static struct
     // timers for idle connections
     ListNode idle_head;
     // timers for TTLs
-    std::vector<HeapEntry> heap;
+    std::vector<HeapEntry<uint64_t>> heap;
     // the thread pool
     TheadPool thread_pool;
 } g_data;
@@ -359,7 +359,7 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out)
     return out.out_int(node ? 1 : 0);
 }
 
-static void heap_remove(std::vector<HeapEntry> &h, size_t pos)
+static void heap_remove(std::vector<HeapEntry<uint64_t>> &h, size_t pos)
 {
     // swap the erased item with the last item
     h[pos] = h.back();
@@ -367,11 +367,11 @@ static void heap_remove(std::vector<HeapEntry> &h, size_t pos)
     // update the swapped item
     if (pos < h.size())
     {
-        heap_fix(h.data(), h.size(), pos);
+        heap_fix<uint64_t>(h.data(), h.size(), pos);
     }
 }
 
-static void heap_upsert(std::vector<HeapEntry> &h, size_t pos, HeapEntry t)
+static void heap_upsert(std::vector<HeapEntry<uint64_t>> &h, size_t pos, HeapEntry<uint64_t> t)
 {
     if (pos < h.size())
     {
@@ -382,7 +382,7 @@ static void heap_upsert(std::vector<HeapEntry> &h, size_t pos, HeapEntry t)
         pos = h.size();
         h.push_back(t); // or add a new item
     }
-    heap_fix(h.data(), h.size(), pos);
+    heap_fix<uint64_t>(h.data(), h.size(), pos);
 }
 
 // set or remove the TTL
@@ -398,7 +398,7 @@ static void entry_set_ttl(Entry *ent, int64_t ttl_ms)
     {
         // add or update the heap data structure
         uint64_t expire_at = get_monotonic_msec() + (uint64_t)ttl_ms;
-        HeapEntry item = HeapEntry{
+        HeapEntry<uint64_t> item = HeapEntry<uint64_t>{
             &ent->heap_idx,
             expire_at,
         };
@@ -854,7 +854,7 @@ static void process_timers()
     // TTL timers using a heap
     const size_t k_max_works = 2000;
     size_t nworks = 0;
-    const std::vector<HeapEntry> &heap = g_data.heap;
+    const std::vector<HeapEntry<uint64_t>> &heap = g_data.heap;
     while (!heap.empty() && heap[0].val < now_ms)
     {
         Entry *ent = container_of(heap[0].ref_pos, Entry, heap_idx);

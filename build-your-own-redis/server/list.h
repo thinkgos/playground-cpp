@@ -1,17 +1,18 @@
 #pragma once
 
 #include <stddef.h>
+#include <list>
 
-struct DList
+struct ListNode
 {
-    DList *prev = NULL;
-    DList *next = NULL;
-    DList()
-    {
-        this->prev = this;
-        this->next = this;
-    }
-    ~DList() = default;
+    ListNode *prev = NULL;
+    ListNode *next = NULL;
+
+    ListNode() : prev(this), next(this) {}
+    // 禁止拷贝构造函数
+    ListNode(const ListNode &) = delete;
+    // 禁止赋值运算符
+    ListNode &operator=(const ListNode &) = delete;
 
     inline bool empty()
     {
@@ -19,21 +20,16 @@ struct DList
     }
     inline void detach()
     {
-        DList *prev = this->prev;
-        DList *next = this->next;
-
-        this->prev->next = next;
-        this->next->prev = prev;
+        this->prev->next = this->next;
+        this->next->prev = this->prev;
         this->prev = this;
         this->next = this;
     }
-    inline void insert_back(DList *rookie)
+    inline void insert_back(ListNode *rookie)
     {
-        DList *prev = this->prev;
-
-        prev->next = rookie;
-        rookie->prev = prev;
+        rookie->prev = this->prev;
         rookie->next = this;
+        this->prev->next = rookie;
         this->prev = rookie;
     }
 };

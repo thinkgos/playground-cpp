@@ -7,14 +7,16 @@
 template <typename T>
 struct HeapEntry
 {
-    size_t *ref_pos = NULL; // 记录下标，用于快速定位到堆中的位置
-    T val = 0;              // 值
+    size_t *ref_pos; // 记录下标，用于快速定位到堆中的位置
+    T val;           // 值
 
-    const bool operator<(const HeapEntry &other) const
+    HeapEntry() : ref_pos(NULL), val(T()) {}
+    HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
+    const bool operator<(const HeapEntry<T> &other) const
     {
         return this->val < other.val;
     }
-    const bool less(const HeapEntry &other) const
+    const bool less(const HeapEntry<T> &other) const
     {
         return operator<(other);
     }
@@ -81,8 +83,8 @@ bool heap_down(HeapEntry<T> *h, size_t pos, size_t len)
 template <typename T>
 void heap_fix(HeapEntry<T> *h, size_t len, size_t pos)
 {
-    if (!heap_down(h, pos, len))
+    if (!heap_down<T>(h, pos, len))
     {
-        heap_up(h, pos);
+        heap_up<T>(h, pos);
     }
 }

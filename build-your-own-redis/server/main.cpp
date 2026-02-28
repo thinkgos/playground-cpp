@@ -398,7 +398,7 @@ static void entry_set_ttl(Entry *ent, int64_t ttl_ms)
     {
         // add or update the heap data structure
         uint64_t expire_at = get_monotonic_msec() + (uint64_t)ttl_ms;
-        HeapEntry<uint64_t> item = HeapEntry<uint64_t>{
+        HeapEntry<uint64_t> item{
             &ent->heap_idx,
             expire_at,
         };

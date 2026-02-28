@@ -1,0 +1,22 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "example",
+      "displayName": "Example Configure Preset",
+      "description": "Configure Preset to use with the example",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "example",
+      "displayName": "Example Build Preset",
+      "description": "Build Preset to use with the example",
+      "configurePreset": "example"
+    }
+  ]
+}

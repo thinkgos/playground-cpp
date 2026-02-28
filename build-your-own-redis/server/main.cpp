@@ -17,6 +17,7 @@
 // C++
 #include <string>
 #include <vector>
+#include <algorithm>
 // proj
 #include "common.h"
 #include "hashtable.h"
@@ -95,7 +96,7 @@ static struct
     // timers for idle connections
     ListNode idle_head;
     // timers for TTLs
-    std::vector<HeapItem> heap;
+    std::vector<HeapEntry> heap;
     // the thread pool
     TheadPool thread_pool;
 } g_data;
@@ -358,30 +359,30 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out)
     return out.out_int(node ? 1 : 0);
 }
 
-static void heap_delete(std::vector<HeapItem> &a, size_t pos)
+static void heap_remove(std::vector<HeapEntry> &h, size_t pos)
 {
     // swap the erased item with the last item
-    a[pos] = a.back();
-    a.pop_back();
+    h[pos] = h.back();
+    h.pop_back();
     // update the swapped item
-    if (pos < a.size())
+    if (pos < h.size())
     {
-        heap_update(a.data(), pos, a.size());
+        heap_fix(h.data(), h.size(), pos);
     }
 }
 
-static void heap_upsert(std::vector<HeapItem> &a, size_t pos, HeapItem t)
+static void heap_upsert(std::vector<HeapEntry> &h, size_t pos, HeapEntry t)
 {
-    if (pos < a.size())
+    if (pos < h.size())
     {
-        a[pos] = t; // update an existing item
+        h[pos] = t; // update an existing item
     }
     else
     {
-        pos = a.size();
-        a.push_back(t); // or add a new item
+        pos = h.size();
+        h.push_back(t); // or add a new item
     }
-    heap_update(a.data(), pos, a.size());
+    heap_fix(h.data(), h.size(), pos);
 }
 
 // set or remove the TTL
@@ -390,14 +391,17 @@ static void entry_set_ttl(Entry *ent, int64_t ttl_ms)
     if (ttl_ms < 0 && ent->heap_idx != (size_t)-1)
     {
         // setting a negative TTL means removing the TTL
-        heap_delete(g_data.heap, ent->heap_idx);
+        heap_remove(g_data.heap, ent->heap_idx);
         ent->heap_idx = -1;
     }
     else if (ttl_ms >= 0)
     {
         // add or update the heap data structure
         uint64_t expire_at = get_monotonic_msec() + (uint64_t)ttl_ms;
-        HeapItem item = {expire_at, &ent->heap_idx};
+        HeapEntry item = HeapEntry{
+            &ent->heap_idx,
+            expire_at,
+        };
         heap_upsert(g_data.heap, ent->heap_idx, item);
     }
 }
@@ -850,10 +854,10 @@ static void process_timers()
     // TTL timers using a heap
     const size_t k_max_works = 2000;
     size_t nworks = 0;
-    const std::vector<HeapItem> &heap = g_data.heap;
+    const std::vector<HeapEntry> &heap = g_data.heap;
     while (!heap.empty() && heap[0].val < now_ms)
     {
-        Entry *ent = container_of(heap[0].ref, Entry, heap_idx);
+        Entry *ent = container_of(heap[0].ref_pos, Entry, heap_idx);
         HNode *node = hm_delete(&g_data.db, &ent->node, &hnode_same);
         assert(node == &ent->node);
         // fprintf(stderr, "key expired: %s\n", ent->key.c_str());

@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+  PRESET_NAME: example
+  BUILD_DIR: build
+  INSTALL_DIR: install
+
+tasks:
+  default:
+    desc: Configure and build the project
+    cmds:
+      - task: configure
+      - task: build
+      - task: install
+      - cmd: ./{{.INSTALL_DIR}}/bin/example
+    silent: true
+
+  clean:
+    desc: Clean build artifacts
+    cmd: rm -rf {{.BUILD_DIR}} {{.INSTALL_DIR}}
+
+  configure:
+    desc: Configure the project
+    cmd: cmake --preset {{.PRESET_NAME}}
+
+  build:
+    desc: Build the project
+    cmd: cmake --build --preset {{.PRESET_NAME}}
+
+  install:
+    desc: Install the project
+    cmd: cmake --install {{.BUILD_DIR}}

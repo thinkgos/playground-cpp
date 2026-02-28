@@ -1,74 +1,65 @@
 #include "heap.h"
 
-static size_t heap_parent(size_t i)
-{
-    return (i + 1) / 2 - 1;
-}
+#define HEAP_PARENT(i) (((i) - 1) >> 1)
+#define HEAP_CHILD_LEFT(i) ((i) << 1 | 1)
+#define HEAP_CHILD_RIGHT(i) ((i) << 1 | 2)
 
-static size_t heap_left(size_t i)
+void heap_up(HeapEntry *h, size_t pos)
 {
-    return i * 2 + 1;
-}
+    // 采用挖坑填补法
+    HeapEntry t = h[pos]; // 挖坑, 保留当前值
 
-static size_t heap_right(size_t i)
-{
-    return i * 2 + 2;
-}
-
-static void heap_up(HeapItem *a, size_t pos)
-{
-    HeapItem t = a[pos];
-    while (pos > 0 && a[heap_parent(pos)].val > t.val)
+    for (; pos > 0;)
     {
-        // swap with the parent
-        a[pos] = a[heap_parent(pos)];
-        *a[pos].ref = pos;
-        pos = heap_parent(pos);
-    }
-    a[pos] = t;
-    *a[pos].ref = pos;
-}
-
-static void heap_down(HeapItem *a, size_t pos, size_t len)
-{
-    HeapItem t = a[pos];
-    while (true)
-    {
-        // find the smallest one among the parent and their kids
-        size_t l = heap_left(pos);
-        size_t r = heap_right(pos);
-        size_t min_pos = pos;
-        uint64_t min_val = t.val;
-        if (l < len && a[l].val < min_val)
-        {
-            min_pos = l;
-            min_val = a[l].val;
-        }
-        if (r < len && a[r].val < min_val)
-        {
-            min_pos = r;
-        }
-        if (min_pos == pos)
+        size_t i = HEAP_PARENT(pos);
+        if (i == pos || !(h[i].less(t)))
         {
             break;
         }
-        // swap with the kid
-        a[pos] = a[min_pos];
-        *a[pos].ref = pos;
-        pos = min_pos;
+        // 上浮
+        h[pos] = h[i];           // swap with the parent
+        *(h[pos].ref_pos) = pos; // record the position
+        // 更新当前位置的索引
+        pos = i;
     }
-    a[pos] = t;
-    *a[pos].ref = pos;
+    h[pos] = t;              // 填补, 将当前值填补到坑中
+    *(h[pos].ref_pos) = pos; // record the position
 }
 
-void heap_update(HeapItem *a, size_t pos, size_t len)
+bool heap_down(HeapEntry *h, size_t pos, size_t len)
 {
-    if (pos > 0 && a[heap_parent(pos)].val > a[pos].val)
+    // 采用挖坑填补法
+    HeapEntry t = h[pos];
+    size_t pos_old = pos;
+
+    for (;;)
     {
-        heap_up(a, pos);
+        size_t l = HEAP_CHILD_LEFT(pos);
+        if (l >= len)
+        {
+            break;
+        }
+        size_t r = HEAP_CHILD_RIGHT(pos);
+        size_t j = (r < len && h[r].less(h[l])) ? r : l;
+        if (!(h[j].less(t)))
+        {
+            break;
+        }
+
+        h[pos] = h[j];           // swap with the kid
+        *(h[pos].ref_pos) = pos; // record the position
+        // 更新当前位置的索引
+        pos = j;
     }
-    else
+    h[pos] = t;              // 填补, 将当前值填补到坑中
+    *(h[pos].ref_pos) = pos; // record the position
+    return pos > pos_old;
+}
+
+void heap_fix(HeapEntry *h, size_t len, size_t pos)
+{
+    if (!heap_down(h, pos, len))
     {
-        heap_down(a, pos, len);
+        heap_up(h, pos);
     }
 }

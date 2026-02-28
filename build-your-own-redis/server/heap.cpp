@@ -12,7 +12,7 @@ void heap_up(HeapEntry *h, size_t pos)
     for (; pos > 0;)
     {
         size_t i = HEAP_PARENT(pos);
-        if (i == pos || !(h[i].less(t)))
+        if (i == pos || !(t.less(h[i])))
         {
             break;
         }

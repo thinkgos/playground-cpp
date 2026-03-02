@@ -1,28 +1,26 @@
-#include <iostream>
-
-#include <vector>
+#include "fmt/core.h"
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
-int main(int argc, char const *argv[])
-{
-    std::vector<int> nums;
+int main(int argc, char const *argv[]) {
+  std::vector<int> nums;
+  fmt::print("Hello World!\n");
+  nums.push_back(3);
+  std::push_heap(nums.begin(), nums.end());
+  nums.push_back(1);
+  std::push_heap(nums.begin(), nums.end());
+  nums.push_back(5);
+  std::push_heap(nums.begin(), nums.end());
+  nums.push_back(2);
+  std::push_heap(nums.begin(), nums.end());
 
-    nums.push_back(3);
-    std::push_heap(nums.begin(), nums.end());
-    nums.push_back(1);
-    std::push_heap(nums.begin(), nums.end());
-    nums.push_back(5);
-    std::push_heap(nums.begin(), nums.end());
-    nums.push_back(2);
-    std::push_heap(nums.begin(), nums.end());
+  for (; !nums.empty();) {
+    std::pop_heap(nums.begin(), nums.end());
+    auto last = nums.back();
+    nums.pop_back();
+    std::cout << last << std::endl;
+  }
 
-    for (; !nums.empty();)
-    {
-        std::pop_heap(nums.begin(), nums.end());
-        auto last = nums.back();
-        nums.pop_back();
-        std::cout << last << std::endl;
-    }
-
-    return 0;
+  return 0;
 }

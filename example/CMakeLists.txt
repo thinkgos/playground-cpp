@@ -14,13 +14,17 @@ project(example
 
 set(TARGET_NAME ${PROJECT_NAME})
 
-add_executable(${TARGET_NAME})
+message(STATUS "Value from Preset: ${MY_CUSTOM_PATH}")
 
+find_package(Catch2 CONFIG REQUIRED)
+
+add_executable(${TARGET_NAME})
 file(GLOB SRC_FILES "*.cpp")
 target_sources(${TARGET_NAME}
     PRIVATE
        ${SRC_FILES}
 )
+target_link_libraries(${TARGET_NAME} PRIVATE Catch2::Catch2WithMain)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 

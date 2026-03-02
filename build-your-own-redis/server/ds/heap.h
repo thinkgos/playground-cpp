@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <stddef.h>
 
 template <typename T> struct HeapEntry {
@@ -8,23 +9,22 @@ template <typename T> struct HeapEntry {
 
   HeapEntry() : ref_pos(NULL), val(T()) {}
   HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
-  const bool operator<(const HeapEntry<T> &other) const {
-    return this->val < other.val;
-  }
-  const bool less(const HeapEntry<T> &other) const { return operator<(other); }
 };
 
 #define HEAP_PARENT(i) (((i) - 1) >> 1)
 #define HEAP_CHILD_LEFT(i) ((i) << 1 | 1)
 #define HEAP_CHILD_RIGHT(i) ((i) << 1 | 2)
 
-template <typename T> void heap_up(HeapEntry<T> *h, size_t pos) {
+template <typename T, typename Compare = std::less<T>>
+void heap_up(HeapEntry<T> *h, size_t pos) {
+  Compare __less;
+
   // 采用挖坑填补法
   HeapEntry<T> t = h[pos]; // 挖坑, 保留当前值
 
   for (; pos > 0;) {
     size_t i = HEAP_PARENT(pos);
-    if (!(t.less(h[i]))) {
+    if (!(__less(t.val, h[i].val))) {
       break;
     }
     // 上浮
@@ -37,7 +37,9 @@ template <typename T> void heap_up(HeapEntry<T> *h, size_t pos) {
   *(h[pos].ref_pos) = pos; // record the position
 }
 
-template <typename T> bool heap_down(HeapEntry<T> *h, size_t pos, size_t len) {
+template <typename T, typename Compare = std::less<T>>
+bool heap_down(HeapEntry<T> *h, size_t pos, size_t len) {
+  Compare __less;
   // 采用挖坑填补法
   HeapEntry<T> t = h[pos];
   size_t pos_old = pos;
@@ -48,8 +50,8 @@ template <typename T> bool heap_down(HeapEntry<T> *h, size_t pos, size_t len) {
       break;
     }
     size_t r = HEAP_CHILD_RIGHT(pos);
-    size_t j = (r < len && h[r].less(h[l])) ? r : l;
-    if (!(h[j].less(t))) {
+    size_t j = (r < len && __less(h[r].val, h[l].val)) ? r : l;
+    if (!(__less(h[j].val, t.val))) {
       break;
     }
 
@@ -63,8 +65,9 @@ template <typename T> bool heap_down(HeapEntry<T> *h, size_t pos, size_t len) {
   return pos > pos_old;
 }
 
-template <typename T> void heap_fix(HeapEntry<T> *h, size_t len, size_t pos) {
-  if (!heap_down<T>(h, pos, len)) {
-    heap_up<T>(h, pos);
+template <typename T, typename Compare = std::less<T>>
+void heap_fix(HeapEntry<T> *h, size_t len, size_t pos) {
+  if (!heap_down<T, Compare>(h, pos, len)) {
+    heap_up<T, Compare>(h, pos);
   }
 }

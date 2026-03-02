@@ -7,7 +7,7 @@ template <typename T> struct HeapEntry {
   size_t *ref_pos; // 记录下标，用于快速定位到堆中的位置
   T val;           // 值
 
-  HeapEntry() : ref_pos(NULL), val(T()) {}
+  HeapEntry() : ref_pos(nullptr), val(T()) {}
   HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
 };
 

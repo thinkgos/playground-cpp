@@ -4,8 +4,8 @@
 #include "hashtable.h"
 
 struct ZSet {
-  AVLNode *root = NULL; // index by (score, name)
-  HMap hmap;            // index by name
+  AVLNode *root = nullptr; // index by (score, name)
+  HMap hmap;               // index by name
 };
 
 struct ZNode {

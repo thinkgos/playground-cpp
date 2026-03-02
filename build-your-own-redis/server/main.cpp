@@ -124,7 +124,7 @@ static int32_t handle_accept(int fd) {
 
 static void conn_destroy(Conn *conn) {
   (void)close(conn->fd);
-  g_data.fd2conn[conn->fd] = NULL;
+  g_data.fd2conn[conn->fd] = nullptr;
   conn->idle_node.detach();
   delete conn;
 }
@@ -346,7 +346,7 @@ static void entry_set_ttl(Entry *ent, int64_t ttl_ms) {
 }
 
 static bool str2int(const std::string &s, int64_t &out) {
-  char *endp = NULL;
+  char *endp = nullptr;
   out = strtoll(s.c_str(), &endp, 10);
   return endp == s.c_str() + s.size();
 }
@@ -404,7 +404,7 @@ static void do_keys(std::vector<std::string> &, Buffer &out) {
 }
 
 static bool str2dbl(const std::string &s, double &out) {
-  char *endp = NULL;
+  char *endp = nullptr;
   out = strtod(s.c_str(), &endp);
   return endp == s.c_str() + s.size() && !isnan(out);
 }
@@ -422,7 +422,7 @@ static void do_zadd(std::vector<std::string> &cmd, Buffer &out) {
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
   HNode *hnode = hm_lookup(&g_data.db, &key.node, &entry_eq);
 
-  Entry *ent = NULL;
+  Entry *ent = nullptr;
   if (!hnode) { // insert a new key
     ent = entry_new(T_ZSET);
     ent->key.swap(key.key);
@@ -452,7 +452,7 @@ static ZSet *expect_zset(std::string &s) {
     return (ZSet *)&k_empty_zset;
   }
   Entry *ent = container_of(hnode, Entry, node);
-  return ent->type == T_ZSET ? &ent->zset : NULL;
+  return ent->type == T_ZSET ? &ent->zset : nullptr;
 }
 
 // zrem zset name

@@ -6,8 +6,8 @@
 #include <vector>
 
 struct Work {
-  void (*f)(void *) = NULL;
-  void *arg = NULL;
+  void (*f)(void *) = nullptr;
+  void *arg = nullptr;
 };
 
 struct TheadPool {

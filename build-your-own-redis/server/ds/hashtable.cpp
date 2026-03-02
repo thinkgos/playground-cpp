@@ -25,17 +25,17 @@ static void h_insert(HTab *htab, HNode *node) {
 // which can be used to delete the target node.
 static HNode **h_lookup(HTab *htab, HNode *key, bool (*eq)(HNode *, HNode *)) {
   if (!htab->tab) {
-    return NULL;
+    return nullptr;
   }
 
   size_t pos = key->hcode & htab->mask;
   HNode **from = &htab->tab[pos]; // incoming pointer to the target
-  for (HNode *cur; (cur = *from) != NULL; from = &cur->next) {
+  for (HNode *cur; (cur = *from) != nullptr; from = &cur->next) {
     if (cur->hcode == key->hcode && eq(cur, key)) {
       return from; // may be a node, may be a slot
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 // remove a node from the chain
@@ -69,7 +69,7 @@ static void hm_help_rehashing(HMap *hmap) {
 }
 
 static void hm_trigger_rehashing(HMap *hmap) {
-  assert(hmap->older.tab == NULL);
+  assert(hmap->older.tab == nullptr);
   // (newer, older) <- (new_table, newer)
   hmap->older = hmap->newer;
   h_init(&hmap->newer, (hmap->newer.mask + 1) * 2);
@@ -82,7 +82,7 @@ HNode *hm_lookup(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *)) {
   if (!from) {
     from = h_lookup(&hmap->older, key, eq);
   }
-  return from ? *from : NULL;
+  return from ? *from : nullptr;
 }
 
 const size_t k_max_load_factor = 8;
@@ -110,7 +110,7 @@ HNode *hm_delete(HMap *hmap, HNode *key, bool (*eq)(HNode *, HNode *)) {
   if (HNode **from = h_lookup(&hmap->older, key, eq)) {
     return h_detach(&hmap->older, from);
   }
-  return NULL;
+  return nullptr;
 }
 
 void hm_clear(HMap *hmap) {
@@ -123,7 +123,7 @@ size_t hm_size(HMap *hmap) { return hmap->newer.size + hmap->older.size; }
 
 static bool h_foreach(HTab *htab, bool (*f)(HNode *, void *), void *arg) {
   for (size_t i = 0; htab->mask != 0 && i <= htab->mask; i++) {
-    for (HNode *node = htab->tab[i]; node != NULL; node = node->next) {
+    for (HNode *node = htab->tab[i]; node != nullptr; node = node->next) {
       if (!f(node, arg)) {
         return false;
       }

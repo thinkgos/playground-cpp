@@ -5,15 +5,15 @@
 
 // hashtable node, should be embedded into the payload
 struct HNode {
-  HNode *next = NULL;
+  HNode *next = nullptr;
   uint64_t hcode = 0;
 };
 
 // a simple fixed-sized hashtable
 struct HTab {
-  HNode **tab = NULL; // array of slots
-  size_t mask = 0;    // power of 2 array size, 2^n - 1
-  size_t size = 0;    // number of keys
+  HNode **tab = nullptr; // array of slots
+  size_t mask = 0;       // power of 2 array size, 2^n - 1
+  size_t size = 0;       // number of keys
 };
 
 // the real hashtable interface.

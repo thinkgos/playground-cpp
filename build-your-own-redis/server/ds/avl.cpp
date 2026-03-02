@@ -95,11 +95,11 @@ AVLNode *avl_fix(AVLNode *node) {
 // detach a node where 1 of its children is empty
 static AVLNode *avl_del_easy(AVLNode *node) {
   assert(!node->left || !node->right);                    // at most 1 child
-  AVLNode *child = node->left ? node->left : node->right; // can be NULL
+  AVLNode *child = node->left ? node->left : node->right; // can be nullptr
   AVLNode *parent = node->parent;
   // update the child's parent pointer
   if (child) {
-    child->parent = parent; // can be NULL
+    child->parent = parent; // can be nullptr
   }
   // attach the child to the grandparent
   if (!parent) {
@@ -159,7 +159,7 @@ AVLNode *avl_offset(AVLNode *node, int64_t offset) {
       // go to the parent
       AVLNode *parent = node->parent;
       if (!parent) {
-        return NULL;
+        return nullptr;
       }
       if (parent->right == node) {
         pos -= avl_cnt(node->left) + 1;

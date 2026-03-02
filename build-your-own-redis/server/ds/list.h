@@ -3,8 +3,8 @@
 #include <stddef.h>
 
 struct ListNode {
-  ListNode *prev = NULL;
-  ListNode *next = NULL;
+  ListNode *prev = nullptr;
+  ListNode *next = nullptr;
 
   ListNode() : prev(this), next(this) {}
   //! 禁止拷贝构造函数

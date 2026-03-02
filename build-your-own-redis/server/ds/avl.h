@@ -4,15 +4,15 @@
 #include <stdint.h>
 
 struct AVLNode {
-  AVLNode *parent = NULL;
-  AVLNode *left = NULL;
-  AVLNode *right = NULL;
+  AVLNode *parent = nullptr;
+  AVLNode *left = nullptr;
+  AVLNode *right = nullptr;
   uint32_t height = 0; // subtree height
   uint32_t cnt = 0;    // subtree size
 };
 
 inline void avl_init(AVLNode *node) {
-  node->left = node->right = node->parent = NULL;
+  node->left = node->right = node->parent = nullptr;
   node->height = 1;
   node->cnt = 1;
 }

@@ -1,6 +1,6 @@
 
 set(TARGET_NAME Tests)
-find_package(Catch2 CONFIG REQUIRED)
+find_package(Catch2 3 REQUIRED)
 
 add_executable(${TARGET_NAME})
 

@@ -3,19 +3,17 @@
 #include "avl.h"
 #include "hashtable.h"
 
-struct ZSet
-{
-    AVLNode *root = NULL; // index by (score, name)
-    HMap hmap;            // index by name
+struct ZSet {
+  AVLNode *root = NULL; // index by (score, name)
+  HMap hmap;            // index by name
 };
 
-struct ZNode
-{
-    AVLNode tree;
-    HNode hmap;
-    double score = 0;
-    size_t len = 0;
-    char name[0]; // flexible array
+struct ZNode {
+  AVLNode tree;
+  HNode hmap;
+  double score = 0;
+  size_t len = 0;
+  char name[0]; // flexible array
 };
 
 bool zset_insert(ZSet *zset, const char *name, size_t len, double score);

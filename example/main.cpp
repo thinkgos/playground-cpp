@@ -1,11 +1,10 @@
-#include "fmt/core.h"
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
 int main(int argc, char const *argv[]) {
   std::vector<int> nums;
-  fmt::print("Hello World!\n");
+
   nums.push_back(3);
   std::push_heap(nums.begin(), nums.end());
   nums.push_back(1);

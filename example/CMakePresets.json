@@ -9,7 +9,8 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "BUILD_TESTING": "ON"
       }
     }
   ],
@@ -19,6 +20,17 @@
       "displayName": "Example Build Preset",
       "description": "Build Preset to use with the example",
       "configurePreset": "example"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "example",
+      "configurePreset": "example",
+      "description": "单元测试",
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
     }
   ]
 }

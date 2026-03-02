@@ -32,3 +32,7 @@ tasks:
   install:
     desc: Install the project
     cmd: cmake --install {{.BUILD_DIR}}
+
+  test:
+    desc: Run tests
+    cmd: ctest --preset {{.PRESET_NAME}} {{if .tag}} -R {{.tag}} {{end}}

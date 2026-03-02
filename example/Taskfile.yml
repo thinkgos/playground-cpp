@@ -3,36 +3,74 @@
 version: "3"
 
 vars:
-  PRESET_NAME: example
   BUILD_DIR: build
   INSTALL_DIR: install
 
 tasks:
   default:
-    desc: Configure and build the project
+    desc: Run the example
     cmds:
-      - task: configure
-      - task: build
-      - task: install
-      - cmd: ./{{.INSTALL_DIR}}/bin/example
-    silent: true
+      - task: run:example
 
   clean:
-    desc: Clean build artifacts
+    desc: Clean build/install artifacts
     cmd: rm -rf {{.BUILD_DIR}} {{.INSTALL_DIR}}
 
   configure:
     desc: Configure the project
-    cmd: cmake --preset {{.PRESET_NAME}}
+    requires:
+      vars: [PRESET]
+    cmd: cmake --preset {{.PRESET}}
 
   build:
     desc: Build the project
-    cmd: cmake --build --preset {{.PRESET_NAME}}
+    requires:
+      vars: [PRESET]
+    cmd: cmake --build --preset {{.PRESET}} {{if .TARGET}}--target {{.TARGET}}{{end}}
 
   install:
     desc: Install the project
     cmd: cmake --install {{.BUILD_DIR}}
 
-  test:
+  tests:
     desc: Run tests
-    cmd: ctest --preset {{.PRESET_NAME}} {{if .tag}} -R {{.tag}} {{end}}
+    requires:
+      vars: [PRESET]
+    cmd: ctest --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
+
+  run:example:
+    desc: Configure/Build/Run the project example
+    vars:
+      PRESET: example
+      TARGET: example
+    cmds:
+      - task: configure
+        vars:
+          PRESET: "{{.PRESET}}"
+        if: '[ {{.ENABLE_CONFIGURE}} = "true" ]'
+      - task: build
+        vars:
+          PRESET: "{{.PRESET}}"
+          TARGET: "{{.TARGET}}"
+      - task: install
+      - cmd: ./{{.INSTALL_DIR}}/bin/example
+    silent: true
+
+  run:tests:
+    desc: Configure/Build/Run the project tests
+    vars:
+      PRESET: example
+      TARGET: Tests
+    cmds:
+      - task: configure
+        vars:
+          PRESET: "{{.PRESET}}"
+        if: '[ {{.ENABLE_CONFIGURE}} = "true" ]'
+      - task: build
+        vars:
+          PRESET: "{{.PRESET}}"
+          TARGET: "{{.TARGET}}"
+      - task: tests
+        vars:
+          PRESET: "{{.PRESET}}"
+    silent: true

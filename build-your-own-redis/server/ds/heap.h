@@ -11,9 +11,13 @@ template <typename T> struct HeapEntry {
   HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
 };
 
-#define HEAP_PARENT(i) (((i) - 1) >> 1)
-#define HEAP_CHILD_LEFT(i) ((i) << 1 | 1)
-#define HEAP_CHILD_RIGHT(i) ((i) << 1 | 2)
+inline constexpr size_t HEAP_PARENT(size_t i) noexcept { return (i - 1) >> 1; }
+inline constexpr size_t HEAP_CHILD_LEFT(size_t i) noexcept {
+  return i << 1 | 1;
+}
+inline constexpr size_t HEAP_CHILD_RIGHT(size_t i) noexcept {
+  return i << 1 | 2;
+}
 
 template <typename T, typename Compare = std::less<T>>
 void heap_up(HeapEntry<T> *h, size_t pos) {

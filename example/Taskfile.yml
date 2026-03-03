@@ -36,7 +36,7 @@ tasks:
     desc: Run tests
     requires:
       vars: [PRESET]
-    cmd: ctest --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
+    cmd: ctest --output-on-failure --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
 
   run:example:
     desc: Configure/Build/Run the project example

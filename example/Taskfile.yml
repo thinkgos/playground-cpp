@@ -8,9 +8,9 @@ vars:
 
 tasks:
   default:
-    desc: Run the example
+    desc: Run the examples
     cmds:
-      - task: run:example
+      - task: run
 
   clean:
     desc: Clean build/install artifacts
@@ -38,11 +38,12 @@ tasks:
       vars: [PRESET]
     cmd: ctest --output-on-failure --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
 
-  run:example:
+  run:
     desc: Configure/Build/Run the project example
+    requires:
+      vars: [TARGET]
     vars:
       PRESET: example
-      TARGET: example
     cmds:
       - task: configure
         vars:
@@ -53,7 +54,7 @@ tasks:
           PRESET: "{{.PRESET}}"
           TARGET: "{{.TARGET}}"
       - task: install
-      - cmd: ./{{.INSTALL_DIR}}/bin/example
+      - cmd: ./{{.INSTALL_DIR}}/bin/{{.TARGET}}
     silent: true
 
   run:tests:

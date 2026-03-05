@@ -28,7 +28,7 @@ public:
   inline size_t size() const { return buf.size(); }
   inline void resize(size_t size) { buf.resize(size); }
   inline const uint8_t *data() const { return buf.data(); }
-  uint8_t operator[](size_t i) { return buf[i]; }
+  uint8_t operator[](size_t i) const { return buf[i]; }
 
   // remove from the front
   inline void consume(size_t n) { buf.erase(buf.begin(), buf.begin() + n); }

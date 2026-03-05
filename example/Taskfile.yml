@@ -53,8 +53,7 @@ tasks:
         vars:
           PRESET: "{{.PRESET}}"
           TARGET: "{{.TARGET}}"
-      - task: install
-      - cmd: ./{{.INSTALL_DIR}}/bin/{{.TARGET}}
+      - cmd: ./{{.BUILD_DIR}}/examples/{{.TARGET}}
     silent: true
 
   run:tests:

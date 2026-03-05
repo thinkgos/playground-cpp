@@ -4,10 +4,10 @@
 #include <stddef.h>
 
 template <typename T> struct HeapEntry {
-  size_t *ref_pos; // 记录下标，用于快速定位到堆中的位置
-  T val;           // 值
+  size_t *ref_pos = nullptr; // 记录下标，用于快速定位到堆中的位置
+  T val = T();               // 值
 
-  HeapEntry() : ref_pos(nullptr), val(T()) {}
+  HeapEntry() = default;
   HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
 };
 

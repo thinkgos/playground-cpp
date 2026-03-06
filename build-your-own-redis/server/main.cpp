@@ -259,14 +259,14 @@ static void do_get(std::vector<std::string> &cmd, Buffer &out) {
   // hashtable lookup
   HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
   if (!node) {
-    return out.out_nil();
+    return out.write_frame();
   }
   // copy the value
   Entry *ent = container_of(node, Entry, node);
   if (ent->type != T_STR) {
-    return out.out_err(ERR_BAD_TYP, "not a string value");
+    return out.write_frame(ERR_BAD_TYP, "not a string value");
   }
-  return out.out_str(ent->str.data(), ent->str.size());
+  return out.write_frame(ent->str);
 }
 
 static void do_set(std::vector<std::string> &cmd, Buffer &out) {
@@ -280,7 +280,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out) {
     // found, update the value
     Entry *ent = container_of(node, Entry, node);
     if (ent->type != T_STR) {
-      return out.out_err(ERR_BAD_TYP, "a non-string value exists");
+      return out.write_frame(ERR_BAD_TYP, "a non-string value exists");
     }
     ent->str.swap(cmd[2]);
   } else {
@@ -291,7 +291,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out) {
     ent->str.swap(cmd[2]);
     hm_insert(&g_data.db, &ent->node);
   }
-  return out.out_nil();
+  return out.write_frame();
 }
 
 static void do_del(std::vector<std::string> &cmd, Buffer &out) {
@@ -304,7 +304,7 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out) {
   if (node) { // deallocate the pair
     entry_del(container_of(node, Entry, node));
   }
-  return out.out_int(node ? 1 : 0);
+  return out.write_frame((int64_t)(node ? 1 : 0));
 }
 
 static void heap_remove(std::vector<HeapEntry<uint64_t>> &h, size_t pos) {
@@ -355,7 +355,7 @@ static bool str2int(const std::string &s, int64_t &out) {
 static void do_expire(std::vector<std::string> &cmd, Buffer &out) {
   int64_t ttl_ms = 0;
   if (!str2int(cmd[2], ttl_ms)) {
-    return out.out_err(ERR_BAD_ARG, "expect int64");
+    return out.write_frame(ERR_BAD_ARG, "expect int64");
   }
 
   LookupKey key;
@@ -367,7 +367,7 @@ static void do_expire(std::vector<std::string> &cmd, Buffer &out) {
     Entry *ent = container_of(node, Entry, node);
     entry_set_ttl(ent, ttl_ms);
   }
-  return out.out_int(node ? 1 : 0);
+  return out.write_frame((int64_t)(node ? 1 : 0));
 }
 
 // PTTL key
@@ -378,28 +378,29 @@ static void do_ttl(std::vector<std::string> &cmd, Buffer &out) {
 
   HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
   if (!node) {
-    return out.out_int(-2); // not found
+    return out.write_frame((int64_t)-2); // not found
   }
 
   Entry *ent = container_of(node, Entry, node);
   if (ent->heap_idx == (size_t)-1) {
-    return out.out_int(-1); // no TTL
+    return out.write_frame((int64_t)-1); // no TTL
   }
 
   uint64_t expire_at = g_data.heap[ent->heap_idx].val;
   uint64_t now_ms = get_monotonic_msec();
-  return out.out_int(expire_at > now_ms ? (expire_at - now_ms) : 0);
+  return out.write_frame(
+      (int64_t)(expire_at > now_ms ? (expire_at - now_ms) : 0));
 }
 
 static bool cb_keys(HNode *node, void *arg) {
   Buffer &out = *(Buffer *)arg;
   const std::string &key = container_of(node, Entry, node)->key;
-  out.out_str(key.data(), key.size());
+  out.write_frame(key);
   return true;
 }
 
 static void do_keys(std::vector<std::string> &, Buffer &out) {
-  out.out_arr((uint32_t)hm_size(&g_data.db));
+  out.write_frame_array((uint32_t)hm_size(&g_data.db));
   hm_foreach(&g_data.db, &cb_keys, (void *)&out);
 }
 
@@ -413,7 +414,7 @@ static bool str2dbl(const std::string &s, double &out) {
 static void do_zadd(std::vector<std::string> &cmd, Buffer &out) {
   double score = 0;
   if (!str2dbl(cmd[2], score)) {
-    return out.out_err(ERR_BAD_ARG, "expect float");
+    return out.write_frame(ERR_BAD_ARG, "expect float");
   }
 
   // look up or create the zset
@@ -431,14 +432,14 @@ static void do_zadd(std::vector<std::string> &cmd, Buffer &out) {
   } else { // check the existing key
     ent = container_of(hnode, Entry, node);
     if (ent->type != T_ZSET) {
-      return out.out_err(ERR_BAD_TYP, "expect zset");
+      return out.write_frame(ERR_BAD_TYP, "expect zset");
     }
   }
 
   // add or update the tuple
   const std::string &name = cmd[3];
   bool added = zset_insert(&ent->zset, name.data(), name.size(), score);
-  return out.out_int((int64_t)added);
+  return out.write_frame((int64_t)added);
 }
 
 static const ZSet k_empty_zset;
@@ -459,7 +460,7 @@ static ZSet *expect_zset(std::string &s) {
 static void do_zrem(std::vector<std::string> &cmd, Buffer &out) {
   ZSet *zset = expect_zset(cmd[1]);
   if (!zset) {
-    return out.out_err(ERR_BAD_TYP, "expect zset");
+    return out.write_frame(ERR_BAD_TYP, "expect zset");
   }
 
   const std::string &name = cmd[2];
@@ -467,19 +468,19 @@ static void do_zrem(std::vector<std::string> &cmd, Buffer &out) {
   if (znode) {
     zset_delete(zset, znode);
   }
-  return out.out_int(znode ? 1 : 0);
+  return out.write_frame((int64_t)(znode ? 1 : 0));
 }
 
 // zscore zset name
 static void do_zscore(std::vector<std::string> &cmd, Buffer &out) {
   ZSet *zset = expect_zset(cmd[1]);
   if (!zset) {
-    return out.out_err(ERR_BAD_TYP, "expect zset");
+    return out.write_frame(ERR_BAD_TYP, "expect zset");
   }
 
   const std::string &name = cmd[2];
   ZNode *znode = zset_lookup(zset, name.data(), name.size());
-  return znode ? out.out_dbl(znode->score) : out.out_nil();
+  return znode ? out.write_frame(znode->score) : out.write_frame();
 }
 
 // zquery zset score name offset limit
@@ -487,37 +488,37 @@ static void do_zquery(std::vector<std::string> &cmd, Buffer &out) {
   // parse args
   double score = 0;
   if (!str2dbl(cmd[2], score)) {
-    return out.out_err(ERR_BAD_ARG, "expect fp number");
+    return out.write_frame(ERR_BAD_ARG, "expect fp number");
   }
   const std::string &name = cmd[3];
   int64_t offset = 0, limit = 0;
   if (!str2int(cmd[4], offset) || !str2int(cmd[5], limit)) {
-    return out.out_err(ERR_BAD_ARG, "expect int");
+    return out.write_frame(ERR_BAD_ARG, "expect int");
   }
 
   // get the zset
   ZSet *zset = expect_zset(cmd[1]);
   if (!zset) {
-    return out.out_err(ERR_BAD_TYP, "expect zset");
+    return out.write_frame(ERR_BAD_TYP, "expect zset");
   }
 
   // seek to the key
   if (limit <= 0) {
-    return out.out_arr(0);
+    return out.write_frame_array(0);
   }
   ZNode *znode = zset_seekge(zset, score, name.data(), name.size());
   znode = znode_offset(znode, offset);
 
   // output
-  size_t ctx = out.out_begin_arr();
+  size_t ctx = out.write_frame_array_begin();
   int64_t n = 0;
   while (znode && n < limit) {
-    out.out_str(znode->name, znode->len);
-    out.out_dbl(znode->score);
+    out.write_frame(znode->name, znode->len);
+    out.write_frame(znode->score);
     znode = znode_offset(znode, +1);
     n += 2;
   }
-  out.out_end_arr(ctx, (uint32_t)n);
+  out.write_frame_array_end(ctx, (uint32_t)n);
 }
 
 static void do_request(std::vector<std::string> &cmd, Buffer &out) {
@@ -542,13 +543,13 @@ static void do_request(std::vector<std::string> &cmd, Buffer &out) {
   } else if (cmd.size() == 6 && cmd[0] == "zquery") {
     return do_zquery(cmd, out);
   } else {
-    return out.out_err(ERR_UNKNOWN, "unknown command.");
+    return out.write_frame(ERR_UNKNOWN, "unknown command.");
   }
 }
 
 static void response_begin(Buffer &out, size_t *header) {
-  *header = out.size();       // messege header position
-  out.push_back((uint32_t)0); // reserve space
+  *header = out.size();   // messege header position
+  out.write((uint32_t)0); // reserve space
 }
 static size_t response_size(Buffer &out, size_t header) {
   return out.size() - header - 4;
@@ -557,7 +558,7 @@ static void response_end(Buffer &out, size_t header) {
   size_t msg_size = response_size(out, header);
   if (msg_size > k_max_msg) {
     out.resize(header + 4);
-    out.out_err(ERR_TOO_BIG, "response is too big.");
+    out.write_frame(ERR_TOO_BIG, "response is too big.");
     msg_size = response_size(out, header);
   }
   // message header
@@ -650,7 +651,7 @@ static void handle_read(Conn *conn) {
     return; // want close
   }
   // got some new data
-  conn->incoming.push_back(buf, (size_t)rv);
+  conn->incoming.write(buf, (size_t)rv);
 
   // parse requests and generate responses
   while (try_one_request(conn)) {

@@ -13,7 +13,7 @@ struct ZNode {
   HNode hmap;
   double score = 0;
   size_t len = 0;
-  char name[0]; // flexible array
+  char name[]; // flexible array
 };
 
 bool zset_insert(ZSet *zset, const char *name, size_t len, double score);

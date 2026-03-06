@@ -11,7 +11,7 @@ static ZNode *znode_new(const char *name, size_t len, double score) {
   assert(node); // not a good idea in real projects
   avl_init(&node->tree);
   node->hmap.next = nullptr;
-  node->hmap.hcode = str_hash((uint8_t *)name, len);
+  node->hmap.hash_code = str_hash((uint8_t *)name, len);
   node->score = score;
   node->len = len;
   memcpy(&node->name[0], name, len);
@@ -81,12 +81,12 @@ bool zset_insert(ZSet *zset, const char *name, size_t len, double score) {
 
 // a helper structure for the hashtable lookup
 struct HKey {
-  HNode node;
+  HashNode node;
   const char *name = nullptr;
   size_t len = 0;
 };
 
-static bool hcmp(HNode *node, HNode *key) {
+static bool hcmp(HashNode *node, HashNode *key) {
   ZNode *znode = container_of(node, ZNode, hmap);
   HKey *hkey = container_of(key, HKey, node);
   if (znode->len != hkey->len) {
@@ -102,10 +102,10 @@ ZNode *zset_lookup(ZSet *zset, const char *name, size_t len) {
   }
 
   HKey key;
-  key.node.hcode = str_hash((uint8_t *)name, len);
+  key.node.hash_code = str_hash((uint8_t *)name, len);
   key.name = name;
   key.len = len;
-  HNode *found = zset->hmap.lookup(&key.node, &hcmp);
+  HashNode *found = zset->hmap.lookup(&key.node, &hcmp);
   return found ? container_of(found, ZNode, hmap) : nullptr;
 }
 
@@ -113,10 +113,10 @@ ZNode *zset_lookup(ZSet *zset, const char *name, size_t len) {
 void zset_delete(ZSet *zset, ZNode *node) {
   // remove from the hashtable
   HKey key;
-  key.node.hcode = node->hmap.hcode;
+  key.node.hash_code = node->hmap.hash_code;
   key.name = node->name;
   key.len = node->len;
-  HNode *found = zset->hmap.remove(&key.node, &hcmp);
+  HashNode *found = zset->hmap.remove(&key.node, &hcmp);
   assert(found);
   // remove from the tree
   zset->root = avl_del(&node->tree);

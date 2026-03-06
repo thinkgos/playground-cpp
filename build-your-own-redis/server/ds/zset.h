@@ -5,12 +5,12 @@
 
 struct ZSet {
   AVLNode *root = nullptr; // index by (score, name)
-  HMap hmap;               // index by name
+  HashMap hmap;            // index by name
 };
 
 struct ZNode {
   AVLNode tree;
-  HNode hmap;
+  HashNode hmap;
   double score = 0;
   size_t len = 0;
   char name[]; // flexible array

@@ -62,15 +62,15 @@ public:
     }
   }
   TheadPool(const TheadPool &) = delete;
+  TheadPool(TheadPool &&) noexcept = delete;
   TheadPool &operator=(const TheadPool &) = delete;
-  TheadPool(TheadPool &&) = delete;
-  TheadPool &operator=(TheadPool &&) = delete;
+  TheadPool &operator=(TheadPool &&) noexcept = delete;
 
   template <typename _Func, typename... _BoundArgs>
   auto enqueue(_Func &&f, _BoundArgs &&...args)
-      -> std::future<typename std::result_of<_Func(_BoundArgs...)>::type> {
+      -> std::future<typename std::invoke_result<_Func, _BoundArgs...>::type> {
     // 推导返回类型
-    using return_type = typename std::result_of<_Func(_BoundArgs...)>::type;
+    using return_type = typename std::invoke_result<_Func, _BoundArgs...>::type;
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
         std::bind(std::forward<_Func>(f), std::forward<_BoundArgs>(args)...));

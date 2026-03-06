@@ -12,7 +12,18 @@ project(example
     VERSION 0.1.0
 )
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(BUILD_FLAGS "-O0 -g3 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BUILD_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BUILD_FLAGS}")
+endif()
 
 # test
 if(BUILD_TESTING)

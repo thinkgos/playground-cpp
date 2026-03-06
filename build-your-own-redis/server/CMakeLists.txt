@@ -28,7 +28,7 @@ elseif(
   (CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR
   (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 )
-  target_compile_options(${TARGET_NAME} PRIVATE -Wall)
+  target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra)
 endif()
 
 

@@ -20,7 +20,7 @@
 // proj
 #include "buffer.h"
 #include "ds/common.h"
-#include "ds/hashtable.h"
+#include "ds/hash_table.h"
 #include "ds/heap.h"
 #include "ds/list.h"
 #include "ds/thread_pool.h"
@@ -230,7 +230,7 @@ static void entry_del(Entry *ent) {
   // unlink it from any data structures
   entry_set_ttl(ent, -1); // remove from the heap data structure
   // run the destructor in a thread pool for large data structures
-  size_t set_size = (ent->type == T_ZSET) ? hm_size(&ent->zset.hmap) : 0;
+  size_t set_size = (ent->type == T_ZSET) ? ent->zset.hmap.size() : 0;
   const size_t k_large_container_size = 1000;
   if (set_size > k_large_container_size) {
     g_data.thread_pool.enqueue(entry_del_func, ent);
@@ -257,7 +257,7 @@ static void do_get(std::vector<std::string> &cmd, Buffer &out) {
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
   // hashtable lookup
-  HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *node = g_data.db.lookup(&key.node, &entry_eq);
   if (!node) {
     return out.write_frame();
   }
@@ -275,7 +275,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out) {
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
   // hashtable lookup
-  HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *node = g_data.db.lookup(&key.node, &entry_eq);
   if (node) {
     // found, update the value
     Entry *ent = container_of(node, Entry, node);
@@ -289,7 +289,7 @@ static void do_set(std::vector<std::string> &cmd, Buffer &out) {
     ent->key.swap(key.key);
     ent->node.hcode = key.node.hcode;
     ent->str.swap(cmd[2]);
-    hm_insert(&g_data.db, &ent->node);
+    g_data.db.insert(&ent->node);
   }
   return out.write_frame();
 }
@@ -300,7 +300,7 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out) {
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
   // hashtable delete
-  HNode *node = hm_delete(&g_data.db, &key.node, &entry_eq);
+  HNode *node = g_data.db.remove(&key.node, &entry_eq);
   if (node) { // deallocate the pair
     entry_del(container_of(node, Entry, node));
   }
@@ -362,7 +362,7 @@ static void do_expire(std::vector<std::string> &cmd, Buffer &out) {
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
 
-  HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *node = g_data.db.lookup(&key.node, &entry_eq);
   if (node) {
     Entry *ent = container_of(node, Entry, node);
     entry_set_ttl(ent, ttl_ms);
@@ -376,7 +376,7 @@ static void do_ttl(std::vector<std::string> &cmd, Buffer &out) {
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
 
-  HNode *node = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *node = g_data.db.lookup(&key.node, &entry_eq);
   if (!node) {
     return out.write_frame((int64_t)-2); // not found
   }
@@ -400,8 +400,8 @@ static bool cb_keys(HNode *node, void *arg) {
 }
 
 static void do_keys(std::vector<std::string> &, Buffer &out) {
-  out.write_frame_array((uint32_t)hm_size(&g_data.db));
-  hm_foreach(&g_data.db, &cb_keys, (void *)&out);
+  out.write_frame_array((uint32_t)g_data.db.size());
+  g_data.db.foreach (&cb_keys, (void *)&out);
 }
 
 static bool str2dbl(const std::string &s, double &out) {
@@ -421,14 +421,14 @@ static void do_zadd(std::vector<std::string> &cmd, Buffer &out) {
   LookupKey key;
   key.key.swap(cmd[1]);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
-  HNode *hnode = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *hnode = g_data.db.lookup(&key.node, &entry_eq);
 
   Entry *ent = nullptr;
   if (!hnode) { // insert a new key
     ent = entry_new(T_ZSET);
     ent->key.swap(key.key);
     ent->node.hcode = key.node.hcode;
-    hm_insert(&g_data.db, &ent->node);
+    g_data.db.insert(&ent->node);
   } else { // check the existing key
     ent = container_of(hnode, Entry, node);
     if (ent->type != T_ZSET) {
@@ -448,7 +448,7 @@ static ZSet *expect_zset(std::string &s) {
   LookupKey key;
   key.key.swap(s);
   key.node.hcode = str_hash((uint8_t *)key.key.data(), key.key.size());
-  HNode *hnode = hm_lookup(&g_data.db, &key.node, &entry_eq);
+  HNode *hnode = g_data.db.lookup(&key.node, &entry_eq);
   if (!hnode) { // a non-existent key is treated as an empty zset
     return (ZSet *)&k_empty_zset;
   }
@@ -713,7 +713,7 @@ static void process_timers() {
   const std::vector<HeapEntry<uint64_t>> &heap = g_data.heap;
   while (!heap.empty() && heap[0].val < now_ms) {
     Entry *ent = container_of(heap[0].ref_pos, Entry, heap_idx);
-    HNode *node = hm_delete(&g_data.db, &ent->node, &hnode_same);
+    HNode *node = g_data.db.remove(&ent->node, &hnode_same);
     assert(node == &ent->node);
     // fprintf(stderr, "key expired: %s\n", ent->key.c_str());
     // delete the key

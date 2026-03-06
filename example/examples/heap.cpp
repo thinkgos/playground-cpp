@@ -20,6 +20,5 @@ int main(int argc, char const *argv[]) {
     nums.pop_back();
     std::cout << last << std::endl;
   }
-
   return 0;
 }

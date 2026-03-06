@@ -1,7 +1,7 @@
 #pragma once
 
 #include "avl.h"
-#include "hashtable.h"
+#include "hash_table.h"
 
 struct ZSet {
   AVLNode *root = nullptr; // index by (score, name)

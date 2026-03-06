@@ -233,7 +233,7 @@ static void entry_del(Entry *ent) {
   size_t set_size = (ent->type == T_ZSET) ? hm_size(&ent->zset.hmap) : 0;
   const size_t k_large_container_size = 1000;
   if (set_size > k_large_container_size) {
-    thread_pool_queue(&g_data.thread_pool, &entry_del_func, ent);
+    g_data.thread_pool.enqueue(entry_del_func, ent);
   } else {
     entry_del_sync(ent); // small; avoid context switches
   }
@@ -725,9 +725,6 @@ static void process_timers() {
 }
 
 int main() {
-  // initialization
-  thread_pool_init(&g_data.thread_pool, 4);
-
   // the listening socket
   int fd = socket(AF_INET, SOCK_STREAM, 0);
   if (fd < 0) {

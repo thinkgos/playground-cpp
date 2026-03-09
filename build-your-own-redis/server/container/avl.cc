@@ -112,7 +112,7 @@ static AVLNode *avl_del_easy(AVLNode *node) {
 }
 
 // detach a node and returns the new root of the tree
-AVLNode *avl_del(AVLNode *node) {
+AVLNode *avl_remove(AVLNode *node) {
   // the easy case of 0 or 1 child
   if (!node->left || !node->right) {
     return avl_del_easy(node);

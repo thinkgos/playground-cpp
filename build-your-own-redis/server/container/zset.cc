@@ -58,7 +58,7 @@ static void zset_update(ZSet *zset, ZNode *node, double score) {
     return;
   }
   // detach the tree node
-  zset->root = avl_del(&node->tree);
+  zset->root = avl_remove(&node->tree);
   avl_init(&node->tree);
   // reinsert the tree node
   node->score = score;
@@ -119,7 +119,7 @@ void zset_delete(ZSet *zset, ZNode *node) {
   HashNode *found = zset->hmap.remove(&key.node, &hcmp);
   assert(found);
   // remove from the tree
-  zset->root = avl_del(&node->tree);
+  zset->root = avl_remove(&node->tree);
   // deallocate the node
   znode_del(node);
 }

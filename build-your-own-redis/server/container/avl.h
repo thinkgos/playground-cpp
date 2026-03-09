@@ -12,7 +12,9 @@ struct AVLNode {
 };
 
 inline void avl_init(AVLNode *node) {
-  node->left = node->right = node->parent = nullptr;
+  node->left = nullptr;
+  node->right = nullptr;
+  node->parent = nullptr;
   node->height = 1;
   node->cnt = 1;
 }
@@ -23,5 +25,5 @@ inline uint32_t avl_cnt(AVLNode *node) { return node ? node->cnt : 0; }
 
 // API
 AVLNode *avl_fix(AVLNode *node);
-AVLNode *avl_del(AVLNode *node);
+AVLNode *avl_remove(AVLNode *node);
 AVLNode *avl_offset(AVLNode *node, int64_t offset);

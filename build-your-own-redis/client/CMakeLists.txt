@@ -9,7 +9,7 @@ set(TARGET_NAME ${PROJECT_NAME})
 add_executable(${TARGET_NAME})
 target_sources(${TARGET_NAME}
     PRIVATE
-        main.cpp
+        main.cc
 )
 
 set(CMAKE_VERBOSE_MAKEFILE ON)

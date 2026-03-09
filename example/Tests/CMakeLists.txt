@@ -4,7 +4,7 @@ find_package(Catch2 3 REQUIRED)
 
 add_executable(${TARGET_NAME})
 
-file(GLOB SRC_FILES "*.cpp")
+file(GLOB SRC_FILES "*.cc")
 target_sources(${TARGET_NAME}
   PRIVATE
     ${SRC_FILES}

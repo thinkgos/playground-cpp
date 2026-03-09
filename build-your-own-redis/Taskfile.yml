@@ -3,18 +3,14 @@
 version: "3"
 
 vars:
-  PRESET_NAME: redis
   BUILD_DIR: build
   INSTALL_DIR: install
 
 tasks:
   default:
-    desc: Configure and build the project
+    desc: Run the project
     cmds:
-      - task: configure
-      - task: build
-      - task: install
-    silent: true
+      - task: run
 
   clean:
     desc: Clean build artifacts
@@ -22,12 +18,32 @@ tasks:
 
   configure:
     desc: Configure the project
-    cmd: cmake --preset {{.PRESET_NAME}}
+    requires:
+      vars: [PRESET]
+    cmd: cmake --preset {{.PRESET}}
 
   build:
     desc: Build the project
-    cmd: cmake --build --preset {{.PRESET_NAME}}
+    requires:
+      vars: [PRESET]
+    cmd: cmake --build --preset {{.PRESET}} {{if .TARGET}}--target {{.TARGET}}{{end}}
 
   install:
     desc: Install the project
     cmd: cmake --install {{.BUILD_DIR}}
+
+  run:
+    desc: Configure/Build/Run the project example
+    vars:
+      PRESET: redis
+    cmds:
+      - task: configure
+        vars:
+          PRESET: "{{.PRESET}}"
+        if: '[ {{.ENABLE_CONFIGURE}} = "true" ]'
+      - task: build
+        vars:
+          PRESET: "{{.PRESET}}"
+          TARGET: "{{.TARGET}}"
+      - task: install
+    silent: true

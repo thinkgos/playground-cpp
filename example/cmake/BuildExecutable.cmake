@@ -2,7 +2,7 @@ function(build_executable target)
     add_executable(${target})
     target_sources(${target}
         PRIVATE
-        ${target}.cpp
+        ${target}.cc
     )
 
     # 使用c++ 20

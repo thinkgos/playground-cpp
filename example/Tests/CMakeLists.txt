@@ -1,5 +1,5 @@
 
-set(TARGET_NAME Tests)
+set(TARGET_NAME IntegrationTests)
 find_package(Catch2 3 REQUIRED)
 
 add_executable(${TARGET_NAME})

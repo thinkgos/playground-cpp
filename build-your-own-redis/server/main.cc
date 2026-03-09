@@ -19,12 +19,12 @@
 #include <vector>
 // proj
 #include "buffer.h"
-#include "container/common.h"
-#include "container/hash_table.h"
-#include "container/heap.h"
-#include "container/list.h"
-#include "container/thread_pool.h"
-#include "container/zset.h"
+#include "common.h"
+#include "hash_table.h"
+#include "heap.h"
+#include "list.h"
+#include "thread_pool.h"
+#include "zset.h"
 
 static void msg(const char *msg) { fprintf(stderr, "%s\n", msg); }
 

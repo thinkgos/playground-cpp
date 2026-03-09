@@ -19,7 +19,7 @@ endif()
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(BUILD_FLAGS "-O0 -g3 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer")
+  set(BUILD_FLAGS "-O0 -g3 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-address-use-after-scope")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BUILD_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BUILD_FLAGS}")

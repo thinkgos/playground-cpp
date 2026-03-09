@@ -12,6 +12,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
        ${SRC_FILES}
 )
+target_link_libraries(${TARGET_NAME} PRIVATE container)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 

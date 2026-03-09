@@ -32,7 +32,7 @@ if(BUILD_TESTING)
   enable_testing()
 
   # 单元测试
-  set(TEST_TARGET_NAME unit_tests)
+  set(TEST_TARGET_NAME UnitTests)
   find_package(GTest REQUIRED)
 
   add_executable(${TEST_TARGET_NAME})
@@ -42,7 +42,9 @@ if(BUILD_TESTING)
     PRIVATE
       ${TEST_SRC_FILES}
   )
-  target_link_libraries(${TEST_TARGET_NAME} PRIVATE 
+  target_link_libraries(
+    ${TEST_TARGET_NAME} 
+    PRIVATE 
       GTest::gtest 
       GTest::gtest_main 
       container

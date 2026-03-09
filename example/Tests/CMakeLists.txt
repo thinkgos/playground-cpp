@@ -1,22 +1,24 @@
 
 set(TARGET_NAME IntegrationTests)
-find_package(Catch2 3 REQUIRED)
+  find_package(GTest REQUIRED)
 
 add_executable(${TARGET_NAME})
 
-file(GLOB SRC_FILES "*.cc")
+file(GLOB_RECURSE TEST_SRC_FILES "*.cxx")
 target_sources(${TARGET_NAME}
   PRIVATE
-    ${SRC_FILES}
+    ${TEST_SRC_FILES}
 )
 
 target_link_libraries(
     ${TARGET_NAME} 
     PRIVATE 
-        Catch2::Catch2WithMain
+      GTest::gtest 
+      GTest::gtest_main 
 )
 
+target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+
 # 自动测试注册
-include(CTest)
-include(Catch)
-catch_discover_tests(${TARGET_NAME})
+include(GoogleTest)
+gtest_discover_tests(${TARGET_NAME})

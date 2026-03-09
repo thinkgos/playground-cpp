@@ -36,7 +36,7 @@ tasks:
     desc: Run tests
     requires:
       vars: [PRESET]
-    cmd: ctest --output-on-failure --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
+    cmd: ctest -V --output-on-failure --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
 
   run:
     desc: Configure/Build/Run the project example
@@ -58,7 +58,7 @@ tasks:
     desc: Configure/Build/Run the project tests
     vars:
       PRESET: redis
-      TARGET: unit_tests
+      TARGET: UnitTests
     cmds:
       - task: configure
         vars:

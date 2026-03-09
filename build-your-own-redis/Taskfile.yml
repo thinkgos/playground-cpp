@@ -32,6 +32,12 @@ tasks:
     desc: Install the project
     cmd: cmake --install {{.BUILD_DIR}}
 
+  tests:
+    desc: Run tests
+    requires:
+      vars: [PRESET]
+    cmd: ctest --output-on-failure --preset {{.PRESET}} {{if .TAG}}-R {{.TAG}}{{end}}
+
   run:
     desc: Configure/Build/Run the project example
     vars:
@@ -46,4 +52,23 @@ tasks:
           PRESET: "{{.PRESET}}"
           TARGET: "{{.TARGET}}"
       - task: install
+    silent: true
+
+  run:tests:
+    desc: Configure/Build/Run the project tests
+    vars:
+      PRESET: redis
+      TARGET: unit_tests
+    cmds:
+      - task: configure
+        vars:
+          PRESET: "{{.PRESET}}"
+        if: '[ {{.ENABLE_CONFIGURE}} = "true" ]'
+      - task: build
+        vars:
+          PRESET: "{{.PRESET}}"
+          TARGET: "{{.TARGET}}"
+      - task: tests
+        vars:
+          PRESET: "{{.PRESET}}"
     silent: true

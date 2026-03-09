@@ -22,5 +22,16 @@
       "description": "Build Preset to use with the redis",
       "configurePreset": "redis"
     }
+  ],
+  "testPresets": [
+    {
+      "name": "redis",
+      "configurePreset": "redis",
+      "description": "单元测试",
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    }
   ]
 }

@@ -1,7 +1,5 @@
 add_library(container OBJECT)
 
-
-
 file(GLOB_RECURSE SRC_FILES "*.cc")
 file(GLOB_RECURSE HEADER_FILES "*.h")
 target_sources(container

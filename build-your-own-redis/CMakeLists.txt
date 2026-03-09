@@ -26,3 +26,32 @@ endif()
 add_subdirectory(container)
 add_subdirectory(server)
 add_subdirectory(client)
+
+# 测试
+if(BUILD_TESTING)
+  enable_testing()
+
+  # 单元测试
+  set(TEST_TARGET_NAME unit_tests)
+  find_package(GTest REQUIRED)
+
+  add_executable(${TEST_TARGET_NAME})
+
+  file(GLOB_RECURSE TEST_SRC_FILES "*.cxx")
+  target_sources(${TEST_TARGET_NAME}
+    PRIVATE
+      ${TEST_SRC_FILES}
+  )
+  target_link_libraries(${TEST_TARGET_NAME} PRIVATE 
+      GTest::gtest 
+      GTest::gtest_main 
+      container
+  )
+
+  target_compile_features(${TEST_TARGET_NAME} PRIVATE cxx_std_20)
+
+  include(GoogleTest)
+  gtest_discover_tests(${TEST_TARGET_NAME})
+
+  # 集成测试
+endif()

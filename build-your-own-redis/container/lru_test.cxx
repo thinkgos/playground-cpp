@@ -3,7 +3,7 @@
 #include <vector>
 
 template <typename K, typename V>
-bool check_lru(lru<K, V> &cache, std::vector<V> expected) {
+bool check_lru(const lru<K, V> &cache, const std::vector<V> expected) {
   return cache.size() == expected.size() &&
          std::equal(cache.begin(), cache.end(), expected.begin(),
                     [](const auto &cache_val, const auto &expected_val) {

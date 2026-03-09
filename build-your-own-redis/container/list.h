@@ -3,16 +3,16 @@
 #include <stddef.h>
 
 struct ListNode {
-  ListNode *prev = nullptr;
-  ListNode *next = nullptr;
+  ListNode *prev = this;
+  ListNode *next = this;
 
-  ListNode() : prev(this), next(this) {}
-  //! 禁止拷贝构造函数
+  ListNode() = default;
   ListNode(const ListNode &) = delete;
-  //! 禁止赋值运算符
   ListNode &operator=(const ListNode &) = delete;
+  ListNode(ListNode &&) noexcept = delete;
+  ListNode &operator=(ListNode &&) noexcept = delete;
 
-  inline bool empty() { return this->next == this; }
+  inline bool empty() const { return this->next == this; }
   inline void detach() {
     this->prev->next = this->next;
     this->next->prev = this->prev;

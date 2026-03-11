@@ -51,8 +51,7 @@ bool __heap_sift_down(HeapEntry<T> h[], size_t len, size_t pos,
 
     h[pos] = std::move(h[j]); // swap with the kid
     *(h[pos].ref_pos) = pos;  // record the position
-    // 更新当前位置的索引
-    pos = j;
+    pos = j;                  // update hole position
   }
   h[pos] = std::move(hole); // fill the hole
   *(h[pos].ref_pos) = pos;  // record the position
@@ -60,24 +59,22 @@ bool __heap_sift_down(HeapEntry<T> h[], size_t len, size_t pos,
 }
 
 // 调整指定位置的元素, 确保堆性质
-template <typename T, typename Compare = std::less<T>>
-void heap_fix(HeapEntry<T> h[], size_t len, size_t pos,
-              Compare __comp = std::less<T>()) {
+template <typename T, typename Compare = std::less<>>
+void heap_fix(HeapEntry<T> h[], size_t len, size_t pos, Compare __comp = {}) {
   if (!__heap_sift_down(h, len, pos, __comp)) {
     __heap_sift_up(h, pos, __comp);
   }
 }
 
 // 调整尾部元素, 确保堆性质
-template <typename T, typename Compare = std::less<T>>
-void heap_push(HeapEntry<T> h[], size_t len, Compare __comp = std::less<T>()) {
+template <typename T, typename Compare = std::less<>>
+void heap_push(HeapEntry<T> h[], size_t len, Compare __comp = {}) {
   __heap_sift_up(h, len - 1, __comp);
 }
 
 // 弹出指定位置的元素, 确保堆性质, 将弹出的元素移至尾部.
-template <typename T, typename Compare = std::less<T>>
-void heap_pop(HeapEntry<T> h[], size_t len, size_t pos,
-              Compare __comp = std::less<T>()) {
+template <typename T, typename Compare = std::less<>>
+void heap_pop(HeapEntry<T> h[], size_t len, size_t pos, Compare __comp = {}) {
   if (pos == 0) {
     heap_pop(h, len, __comp);
   } else if (pos < len - 1) {
@@ -87,8 +84,8 @@ void heap_pop(HeapEntry<T> h[], size_t len, size_t pos,
 }
 
 // 弹出顶部元素, 确保堆性质, 将弹出的元素移至尾部.
-template <typename T, typename Compare = std::less<T>>
-void heap_pop(HeapEntry<T> h[], size_t len, Compare __comp = std::less<T>()) {
+template <typename T, typename Compare = std::less<>>
+void heap_pop(HeapEntry<T> h[], size_t len, Compare __comp = {}) {
   std::swap(h[0], h[len - 1]);
   __heap_sift_down(h, len - 1, 0, __comp);
 }

@@ -51,7 +51,7 @@ protected:
 
 TEST_F(TestHeap, KeepHeap) { ASSERT_TRUE(this->is_heap()); }
 
-TEST_F(TestHeap, Adjust) {
+TEST_F(TestHeap, AdjustToSiftUp) {
   size_t pos = this->m_heap_index[4];
   this->m_vec[pos] = HeapEntry(&this->m_heap_index[4], (uint64_t)20);
   heap_fix(this->m_vec.data(), this->m_vec.size(), pos,
@@ -59,6 +59,16 @@ TEST_F(TestHeap, Adjust) {
 
   ASSERT_TRUE(this->is_heap());
   ASSERT_EQ(this->m_vec[0].val, (uint64_t)20);
+  ASSERT_EQ(this->size(), (size_t)8);
+}
+
+TEST_F(TestHeap, AdjustToSiftDown) {
+  size_t pos = this->m_heap_index[4];
+  this->m_vec[pos] = HeapEntry(&this->m_heap_index[4], (uint64_t)1000);
+  heap_fix(this->m_vec.data(), this->m_vec.size(), pos,
+           std::greater<uint64_t>());
+
+  ASSERT_TRUE(this->is_heap());
   ASSERT_EQ(this->size(), (size_t)8);
 }
 

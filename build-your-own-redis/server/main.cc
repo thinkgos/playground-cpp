@@ -308,24 +308,20 @@ static void do_del(std::vector<std::string> &cmd, Buffer &out) {
 }
 
 static void heap_remove(std::vector<HeapEntry<uint64_t>> &h, size_t pos) {
-  // swap the erased item with the last item
-  h[pos] = h.back();
+  heap_pop(h.data(), h.size(), pos, std::greater<uint64_t>());
   h.pop_back();
-  // update the swapped item
-  if (pos < h.size()) {
-    heap_fix<uint64_t>(h.data(), h.size(), pos);
-  }
 }
 
-static void heap_upsert(std::vector<HeapEntry<uint64_t>> &h, size_t pos,
+static void heap_upsert(std::vector<HeapEntry<uint64_t>> &h,
                         HeapEntry<uint64_t> t) {
+  size_t pos = *t.ref_pos;
   if (pos < h.size()) {
     h[pos] = t; // update an existing item
+    heap_fix<uint64_t>(h.data(), h.size(), pos, std::greater<uint64_t>());
   } else {
-    pos = h.size();
     h.push_back(t); // or add a new item
+    heap_push(h.data(), h.size(), std::greater<uint64_t>());
   }
-  heap_fix<uint64_t>(h.data(), h.size(), pos);
 }
 
 // set or remove the TTL
@@ -341,7 +337,7 @@ static void entry_set_ttl(Entry *ent, int64_t ttl_ms) {
         &ent->heap_idx,
         expire_at,
     };
-    heap_upsert(g_data.heap, ent->heap_idx, item);
+    heap_upsert(g_data.heap, item);
   }
 }
 

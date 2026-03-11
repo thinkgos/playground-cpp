@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <stddef.h>
+#include <utility>
 
 template <typename T> struct HeapEntry {
   size_t *ref_pos = nullptr; // 记录下标，用于快速定位到堆中的位置
@@ -11,67 +13,82 @@ template <typename T> struct HeapEntry {
   HeapEntry(size_t *ref_pos, T val) : ref_pos(ref_pos), val(val) {}
 };
 
-inline constexpr size_t HEAP_PARENT(size_t i) noexcept { return (i - 1) >> 1; }
-inline constexpr size_t HEAP_CHILD_LEFT(size_t i) noexcept {
-  return i << 1 | 1;
-}
-inline constexpr size_t HEAP_CHILD_RIGHT(size_t i) noexcept {
-  return i << 1 | 2;
-}
+template <typename T, typename Compare>
+void __heap_sift_up(HeapEntry<T> h[], size_t pos, Compare __comp) {
+  HeapEntry<T> hole = std::move(h[pos]); // record the hole value
 
-template <typename T, typename Compare = std::less<T>>
-void heap_up(HeapEntry<T> *h, size_t pos) {
-  Compare __less;
-
-  // 采用挖坑填补法
-  HeapEntry<T> t = h[pos]; // 挖坑, 保留当前值
-
-  for (; pos > 0;) {
-    size_t i = HEAP_PARENT(pos);
-    if (!(__less(t.val, h[i].val))) {
+  while (pos > 0) {
+    size_t parent_pos = (pos - 1) / 2;
+    if (!(__comp(h[parent_pos].val, hole.val))) {
       break;
     }
     // 上浮
-    h[pos] = h[i];           // swap with the parent
-    *(h[pos].ref_pos) = pos; // record the position
-    // 更新当前位置的索引
-    pos = i;
+    h[pos] = std::move(h[parent_pos]); // swap with the parent
+    *(h[pos].ref_pos) = pos;           // record the position
+    pos = parent_pos;                  // update hole position
   }
-  h[pos] = t;              // 填补, 将当前值填补到坑中
-  *(h[pos].ref_pos) = pos; // record the position
+  h[pos] = std::move(hole); // fill the hole
+  *(h[pos].ref_pos) = pos;  // record the position
 }
 
-template <typename T, typename Compare = std::less<T>>
-bool heap_down(HeapEntry<T> *h, size_t pos, size_t len) {
-  Compare __less;
-  // 采用挖坑填补法
-  HeapEntry<T> t = h[pos];
-  size_t pos_old = pos;
+template <typename T, typename Compare>
+bool __heap_sift_down(HeapEntry<T> h[], size_t len, size_t pos,
+                      Compare __comp) {
+
+  HeapEntry<T> hole = std::move(h[pos]);
+  size_t old_pos = pos;
 
   for (;;) {
-    size_t l = HEAP_CHILD_LEFT(pos);
+    size_t l = pos * 2 + 1;
     if (l >= len) {
       break;
     }
-    size_t r = HEAP_CHILD_RIGHT(pos);
-    size_t j = (r < len && __less(h[r].val, h[l].val)) ? r : l;
-    if (!(__less(h[j].val, t.val))) {
+    size_t r = pos * 2 + 2;
+    size_t j = (r < len && __comp(h[l].val, h[r].val)) ? r : l;
+    if (!__comp(hole.val, h[j].val)) {
       break;
     }
 
-    h[pos] = h[j];           // swap with the kid
-    *(h[pos].ref_pos) = pos; // record the position
+    h[pos] = std::move(h[j]); // swap with the kid
+    *(h[pos].ref_pos) = pos;  // record the position
     // 更新当前位置的索引
     pos = j;
   }
-  h[pos] = t;              // 填补, 将当前值填补到坑中
-  *(h[pos].ref_pos) = pos; // record the position
-  return pos > pos_old;
+  h[pos] = std::move(hole); // fill the hole
+  *(h[pos].ref_pos) = pos;  // record the position
+  return pos > old_pos;
 }
 
+// 调整指定位置的元素, 确保堆性质
 template <typename T, typename Compare = std::less<T>>
-void heap_fix(HeapEntry<T> *h, size_t len, size_t pos) {
-  if (!heap_down<T, Compare>(h, pos, len)) {
-    heap_up<T, Compare>(h, pos);
+void heap_fix(HeapEntry<T> h[], size_t len, size_t pos,
+              Compare __comp = std::less<T>()) {
+  if (!__heap_sift_down(h, len, pos, __comp)) {
+    __heap_sift_up(h, pos, __comp);
   }
+}
+
+// 调整尾部元素, 确保堆性质
+template <typename T, typename Compare = std::less<T>>
+void heap_push(HeapEntry<T> h[], size_t len, Compare __comp = std::less<T>()) {
+  __heap_sift_up(h, len - 1, __comp);
+}
+
+// 弹出指定位置的元素, 确保堆性质, 将弹出的元素移至尾部.
+template <typename T, typename Compare = std::less<T>>
+void heap_pop(HeapEntry<T> h[], size_t len, size_t pos,
+              Compare __comp = std::less<T>()) {
+  if (pos == 0) {
+    heap_pop(h, len, __comp);
+  } else if (pos < len - 1) {
+    std::swap(h[pos], h[len - 1]);
+    heap_fix(h, len - 1, pos, __comp);
+  }
+}
+
+// 弹出顶部元素, 确保堆性质, 将弹出的元素移至尾部.
+template <typename T, typename Compare = std::less<T>>
+void heap_pop(HeapEntry<T> h[], size_t len, Compare __comp = std::less<T>()) {
+  std::swap(h[0], h[len - 1]);
+  __heap_sift_down(h, len - 1, 0, __comp);
 }

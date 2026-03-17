@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <ostream>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -13,12 +12,10 @@ public:
 };
 
 void oops() {
-  {
-    std::string name = "World";
-    std::thread t(background_task{}, name);
+  std::string name = "World";
+  std::thread t(background_task{}, name);
 
-    t.detach();
-  }
+  t.detach();
 }
 
 int main() {
